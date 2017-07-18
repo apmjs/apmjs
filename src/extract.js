@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
+const Package = require('./package.js')
 const Promise = require('bluebird')
 const path = require('path')
-const changeCase = require('change-case')
 const _ = require('lodash')
 const debug = require('debug')('apmjs:extract')
 
@@ -11,10 +11,10 @@ function extractDependencies (pathname) {
     .then(path => fs
       .readdir(path)
       .catch(e => {
-        if (e.code === 'ENOENT') {
-          return []
+        if (e.code !== 'ENOENT') {
+          throw e
         }
-        throw e
+        return []
       })
     )
     .map(filename => path.resolve(pathname, 'node_modules', filename))
@@ -32,7 +32,9 @@ function extractTree (pathname) {
   return Promise
     .all([extractCurrent(pathname), extractDependencies(pathname)])
     .spread((module, dependencies) => {
-      module.dependencies = _.mapKeys(dependencies, dep => dep.pkg.name)
+      module.dependencies = _.mapKeys(
+        dependencies,
+        dep => dep.descriptor.name)
       return module
     })
 }
@@ -40,19 +42,29 @@ function extractTree (pathname) {
 function extractCurrent (pathname) {
   return Promise.resolve(path.resolve(pathname, 'package.json'))
     .then(filename => fs.readJson(filename))
-    .then(pkg => {
-      var filepath = pkg.browser || pkg.index || 'index.js'
-      filepath = path.resolve(pathname, filepath)
-      return [pkg, filepath, fs.readFile(filepath, {encoding: 'utf8'})]
-    })
-    .spread((pkg, filepath, content) => {
-      var name = changeCase.camelCase(pkg.name)
-      return {filepath, content, name, pkg}
+    .then(descriptor => new Package(descriptor, pathname))
+}
+
+function flatten (root) {
+  var pkgs = _.chain(root.dependencies).map(flatten).flatten().value()
+  pkgs.push(root)
+  return pkgs
+}
+
+function writeFiles (packages, dir) {
+  debug(`writing ${packages.length} packages to ${dir}`)
+  return Promise.resolve(packages)
+    .map(pkg => pkg.read())
+    .map(pkg => {
+      var targetPath = pkg.distname(dir)
+      return fs.writeFile(targetPath, pkg.content)
     })
 }
 
 module.exports = {
   extractTree,
   extractCurrent,
-  extractDependencies
+  extractDependencies,
+  writeFiles,
+  flatten
 }

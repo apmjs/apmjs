@@ -1,4 +1,5 @@
 const mock = require('mock-fs')
+const fs = require('fs-extra')
 const extract = require('../src/extract.js')
 const chai = require('chai')
 const expect = chai.expect
@@ -8,34 +9,18 @@ chai.use(require('chai-as-promised'))
 describe('extract', function () {
   describe('extractCurrent', function () {
     before(() => mock({
-      '/foo': stub.foo,
-      '/bar': stub.bar,
-      '/coo': stub.coo
+      '/foo': stub.foo
     }))
     after(() => mock.restore())
-    it('should resolve index.js by default', function () {
+    it('should resolve package', function () {
       var ret = extract.extractCurrent('/foo')
-      return expect(ret).to.eventually.deep.equal({
+      return expect(ret).to.eventually.deep.include({
         filepath: '/foo/index.js',
         name: 'foo',
-        content: 'foo-content',
-        pkg: {
-          name: 'foo'
+        descriptor: {
+          name: 'foo',
+          version: '1.2'
         }
-      })
-    })
-    it('should respect package.json/index field', function () {
-      var ret = extract.extractCurrent('/bar')
-      return expect(ret).to.eventually.include({
-        filepath: '/bar/a.js',
-        content: 'bar-content'
-      })
-    })
-    it('should take browser field over index field', function () {
-      var ret = extract.extractCurrent('/coo')
-      return expect(ret).to.eventually.include({
-        filepath: '/coo/a.js',
-        content: 'coo-content'
       })
     })
   })
@@ -46,9 +31,44 @@ describe('extract', function () {
     after(() => mock.restore())
     it('should load child modules', function () {
       var ret = extract.extractTree('/laa')
-      return expect(ret).to.eventually.have.deep.property(
-        'dependencies.doo.dependencies.foo.content',
-        'foo-content')
+      return expect(ret).to.eventually.nested.include({
+        'dependencies.doo.dependencies.foo.name': 'foo'
+      })
+    })
+  })
+  describe('flatten', function () {
+    before(() => mock({
+      '/laa': stub.laa
+    }))
+    after(() => mock.restore())
+    it('should flatten all dependencies', function () {
+      return extract.extractTree('/laa')
+        .then(extract.flatten)
+        .then(function (pkgs) {
+          expect(pkgs).to.be.an('array')
+          expect(pkgs.length).to.equal(4)
+        })
+    })
+  })
+  describe('writeFiles', function () {
+    before(() => {
+      mock({
+        '/laa': stub.laa,
+        '/build': {}
+      })
+      return extract.extractTree('/laa')
+        .then(extract.flatten)
+        .then(pkgs => extract.writeFiles(pkgs, '/build'))
+    })
+    after(() => mock.restore())
+    it('should write all files', function () {
+      return fs.readdir('/build').then(files => {
+        expect(files.length).to.equal(4)
+      })
+    })
+    it('should write all files', function () {
+      return fs.readFile('/build/bar-1.1.js', {encoding: 'utf8'})
+        .then(files => expect(files).to.equal('bar-content'))
     })
   })
 })

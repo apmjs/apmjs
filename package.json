@@ -8,15 +8,16 @@
   },
   "scripts": {
     "lint": "eslint src bin test",
-    "test": "DEBUG=apmjs:* mocha --recursive"
+    "debug": "DEBUG=apmjs:* mocha --recursive",
+    "test": "mocha --recursive"
   },
   "keywords": [
     "AMD",
     "package-manager"
   ],
   "devDependencies": {
-    "chai": "^3.5.0",
-    "chai-as-promised": "^6.0.0",
+    "chai": "^4.1.0",
+    "chai-as-promised": "^7.1.1",
     "coveralls": "^2.11.9",
     "eslint": "^3.19.0",
     "eslint-config-standard": "^10.2.0",
