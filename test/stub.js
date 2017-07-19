@@ -1,31 +1,48 @@
+var fooJson = {'name': 'foo', 'version': '1.2'}
 var foo = {
-  'package.json': '{"name": "foo", "version": "1.2"}',
+  'package.json': JSON.stringify(fooJson),
   'index.js': 'foo-content'
 }
+
+var barJson = {'index': './a.js', 'name': 'bar', 'version': '1.1'}
 var bar = {
-  'package.json': '{"index": "./a.js", "name": "bar", "version": "1.1"}',
+  'package.json': JSON.stringify(barJson),
   'a.js': 'bar-content'
 }
+
+var cooJson = {'browser': './a.js', 'index': './b.js', 'name': 'coo', 'version': '1.3'}
 var coo = {
-  'package.json': '{"browser": "./a.js", "index": "./b.js", "name": "coo", "version": "1.3"}',
+  'package.json': JSON.stringify(cooJson),
   'a.js': 'coo-content'
 }
 
+var dooJson = {
+  name: 'doo',
+  version: '1.4',
+  dependencies: {
+    foo: '1.2',
+    bar: '1.1'
+  }
+}
 var doo = {
-  'package.json': '{"name": "doo", "version": "1.4"}',
+  'package.json': JSON.stringify(dooJson),
   'index.js': 'doo-content',
-  'node_modules': {
-    'foo': foo,
-    'bar': bar
-  }
+  'node_modules': {foo, bar}
 }
 
+var laaJson = {
+  name: 'laa',
+  version: '1.0',
+  dependencies: {
+    doo: '1.4'
+  }
+}
 var laa = {
-  'package.json': '{"name": "laa", "version": "1.0"}',
+  'package.json': JSON.stringify(laaJson),
   'index.js': 'laa-content',
-  'node_modules': {
-    'doo': doo
-  }
+  'node_modules': {doo}
 }
 
-module.exports = {foo, bar, coo, doo, laa}
+module.exports = {
+  foo, fooJson, bar, barJson, coo, cooJson, doo, dooJson, laa, laaJson
+}

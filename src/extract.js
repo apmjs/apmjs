@@ -7,18 +7,11 @@ const debug = require('debug')('apmjs:extract')
 
 function extractDependencies (pathname) {
   debug('extracting dependencies for', pathname)
-  return Promise.resolve(path.resolve(pathname, 'node_modules'))
-    .then(path => fs
-      .readdir(path)
-      .catch(e => {
-        if (e.code !== 'ENOENT') {
-          throw e
-        }
-        return []
-      })
-    )
+  return getPackageJson(pathname)
+    .then(descriptor => _.keys(descriptor.dependencies))
     .map(filename => path.resolve(pathname, 'node_modules', filename))
     .map(extractTree)
+    .filter(x => !!x)
 }
 
 /**
@@ -37,12 +30,22 @@ function extractTree (pathname) {
         dep => dep.descriptor.name)
       return module
     })
+    .catch(e => {
+      if (e.code !== 'ENOENT') {
+        throw e
+      }
+      return null
+    })
 }
 
 function extractCurrent (pathname) {
+  return getPackageJson(pathname)
+    .then(descriptor => new Package(descriptor, pathname))
+}
+
+function getPackageJson (pathname) {
   return Promise.resolve(path.resolve(pathname, 'package.json'))
     .then(filename => fs.readJson(filename))
-    .then(descriptor => new Package(descriptor, pathname))
 }
 
 function flatten (root) {
