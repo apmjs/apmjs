@@ -23,14 +23,15 @@
     "eslint-config-standard": "^10.2.0",
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-mocha": "^4.9.0",
-    "eslint-plugin-node": "^4.2.2",
+    "eslint-plugin-node": "^4.2.3",
     "eslint-plugin-promise": "^3.5.0",
     "eslint-plugin-standard": "^3.0.1",
     "istanbul": "^0.4.3",
     "mocha": "^3.0.2",
-    "mock-fs": "^3.9.0",
+    "mock-fs": "^4.4.1",
+    "nock": "^9.0.14",
     "sinon": "^1.17.4",
-    "sinon-chai": "^2.8.0"
+    "sinon-chai": "^2.12.0"
   },
   "author": "harttle <yangjvn@126.com>",
   "license": "MIT",
@@ -43,6 +44,7 @@
     "lodash": "^4.17.4",
     "npm": "^5.3.0",
     "npmlog": "^4.1.2",
-    "shopify-liquid": "^1.9.0"
+    "shopify-liquid": "^1.9.0",
+    "tarball-extract": "0.0.6"
   }
 }

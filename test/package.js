@@ -43,10 +43,10 @@ describe('package', function () {
   })
   describe('#distname', function () {
     it('should return name+version string', function () {
-      return expect(pkg.distname('/z')).to.equal('/z/foo-1.2.3.js')
+      return expect(pkg.distname('/z')).to.equal('/z/foo.js')
     })
     it('should default dirname to ""', function () {
-      return expect(pkg.distname('foo-1-2-3.js'))
+      return expect(pkg.distname('foo.js'))
     })
   })
 })
