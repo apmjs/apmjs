@@ -4,9 +4,6 @@ const path = require('path')
 const npm = require('npm')
 const fs = require('fs-extra')
 const tarball = require('tarball-extract')
-Promise.config({
-  longStackTraces: true
-})
 
 function downloadPackage (url, dir) {
   var name = path.basename(url)
@@ -21,8 +18,13 @@ function downloadPackage (url, dir) {
     .then(() => fs.move(pkgdir, dir, {overwrite: true}))
 }
 
+var infoCache = {}
+
 function getPackageInfo (name) {
-  return Promise.fromCallback(cb => view([name], true, cb))
+  if (infoCache[name]) {
+    return infoCache[name]
+  }
+  return (infoCache[name] = Promise.fromCallback(cb => view([name], true, cb)))
 }
 
 function load (config) {

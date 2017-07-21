@@ -6,5 +6,5 @@
 
 APM is a package manager for AMD.
 
-* APM Philosophy: <https://github.com/jetwg/apmjs/wiki>
+* APM Philosophy: <https://github.com/jetwg/apmjs/wiki/APM-Philosophy>
 * Roadmap: <https://github.com/jetwg/apmjs/wiki/Roadmap>
