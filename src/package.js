@@ -5,7 +5,7 @@ const path = require('path')
 const Promise = require('bluebird')
 
 function Package (descriptor, pathname) {
-  assert(descriptor.name, 'name not defined:' + descriptor)
+  assert(descriptor.name, 'package name not defined:' + descriptor)
 
   this.version = descriptor.version || '0.0.0'
   this.name = changeCase.camelCase(descriptor.name)

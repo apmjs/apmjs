@@ -9,7 +9,7 @@ const fooTgz = path.resolve(__dirname, './stub/foo-1.0.0.tgz')
 chai.use(require('chai-as-promised'))
 
 describe('npm', function () {
-  this.timeout(150000)
+  this.timeout(1000)
 
   before(() => {
     nock('http://apm')
@@ -20,19 +20,22 @@ describe('npm', function () {
       .replyWithFile(200, fooTgz)
     return npm.load({registry: 'http://apm'})
   })
+  after(() => nock.cleanAll())
 
   describe('getPackageInfo', function () {
     it('should get response', function () {
       return npm.getPackageInfo('foo')
-        .then(info => expect(info['1.0.0']).to.deep.include({
-          name: 'foo',
-          versions: ['1.0.0'],
-          dependencies: {},
-          dist: {
-            shasum: '943e0ec03df00ebeb6273a5b94b916ba54b47581',
-            tarball: 'http://apm/foo/-/foo-1.0.0.tgz'
-          }
-        }))
+        .then(info => {
+          expect(info.versions).to.have.property('1.0.0')
+          expect(info.versions['1.0.0']).to.deep.include({
+            name: 'foo',
+            dependencies: {},
+            dist: {
+              shasum: '943e0ec03df00ebeb6273a5b94b916ba54b47581',
+              tarball: 'http://apm/foo/-/foo-1.0.0.tgz'
+            }
+          })
+        })
     })
   })
   describe('downloadPackage', function () {

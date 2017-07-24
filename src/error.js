@@ -9,13 +9,12 @@ function PackageNotFound (name, parent) {
 }
 util.inherits(PackageNotFound, Error)
 
-function UnmetDependency (node, target) {
+function UnmetDependency (message) {
   Error.captureStackTrace(this, this.constructor)
   this.name = this.constructor.name
-  this.code = 'ENOTCOM'
-  this.message = `${target.name} not compliant with ${node.name}`
-  this.target = target
+  this.code = 'EUNMET'
+  this.message = message || `unmet dependency`
 }
-util.inherits(PackageNotFound, Error)
+util.inherits(UnmetDependency, Error)
 
 module.exports = {PackageNotFound, UnmetDependency}
