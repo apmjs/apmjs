@@ -9,6 +9,7 @@ function Package (descriptor, pathname) {
 
   this.version = descriptor.version || '0.0.0'
   this.name = changeCase.camelCase(descriptor.name)
+  this.dependencies = descriptor.dependencies
   this.descriptor = descriptor
   if (pathname) {
     this.setPathname(pathname)

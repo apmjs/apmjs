@@ -1,5 +1,4 @@
 const chai = require('chai')
-const path = require('path')
 const npm = require('../src/npm.js')
 const _ = require('lodash')
 const error = require('../src/error.js')
@@ -13,10 +12,13 @@ describe('TreeNode', function () {
 
   before(() => {
     nock('http://apm')
-    .get('/foo')
-    .replyWithFile(200, path.resolve(__dirname, 'stub/foo.info.json'))
-    .get('/bar')
-    .replyWithFile(200, path.resolve(__dirname, 'stub/bar.info.json'))
+      .log(console.log)
+      .get('/foo')
+      .reply(200, JSON.stringify(require('./stub/foo.info.json')))
+      .get('/bar')
+      .reply(200, JSON.stringify(require('./stub/bar.info.json')))
+      .get('/baz')
+      .reply(200, JSON.stringify(require('./stub/baz.info.json')))
     return npm.load({registry: 'http://apm'})
   })
   after(() => nock.cleanAll())
@@ -32,8 +34,7 @@ describe('TreeNode', function () {
     it('should create root without error', function () {
       var versions = {'1.0.0': {name: 'foo'}}
       function gn () { return new TreeNode('foo', versions) }
-      gn()
-      // expect(gn).to.not.throw()
+      expect(gn).to.not.throw()
     })
   })
   describe('#pickVersion', function () {
@@ -62,7 +63,6 @@ describe('TreeNode', function () {
     })
   })
   describe('.checkCompliance', function () {
-    this.timeout(1000)
     it('should not throw when creating the same', function () {
       var parent = {name: 'parent', dependencies: {'bar': '1.x'}}
       return TreeNode.create('bar', parent).then(() => {
@@ -101,7 +101,7 @@ describe('TreeNode', function () {
     })
     it('should throw when not compliant', function () {
       var parent1 = {name: 'parent1', dependencies: {'bar': '1.0.0'}}
-      var parent2 = {name: 'parent2', dependencies: {'bar': '>=1.0.1'}}
+      var parent2 = {name: 'parent2', dependencies: {'bar': '>=1.0.1'}, fallback: e => { throw e }}
       return expect(
           TreeNode
           .create('bar', parent1)
@@ -111,6 +111,28 @@ describe('TreeNode', function () {
           error.UnmetDependency,
           /bar@>=1.0.1 not available, required by parent2/
         )
+    })
+  })
+  describe('dependency trees', function () {
+    it('should install latest available', function () {
+      var root = new TreeNode('root', {'1.0.0': {
+        name: 'root',
+        dependencies: { foo: '1.0.0', baz: '1.x' }
+      }})
+      return root.populateChildren().then(() => {
+        expect(_.size(TreeNode.nodes)).to.equal(3)
+        expect(TreeNode.nodes.baz).to.have.property('version', '1.1.0')
+      })
+    })
+    it('should install latest compatible', function () {
+      var root = new TreeNode('root', {'1.0.0': {
+        name: 'root',
+        dependencies: { foo: '1.0.0', baz: '1.0.x' }
+      }})
+      return root.populateChildren().then(() => {
+        expect(_.size(TreeNode.nodes)).to.equal(3)
+        expect(TreeNode.nodes.baz).to.have.property('version', '1.0.1')
+      })
     })
   })
 })

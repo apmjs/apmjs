@@ -32,7 +32,9 @@ function getPackageInfo (name) {
   return (infoCache[name] = new Promise((resolve, reject) => {
     var opts = {url: url.resolve(config.registry, name), json: true}
     request.get(opts, (e, r, user) => e ? reject(e) : resolve(user))
-  })).tap(debug)
+  })).tap(descriptor => {
+    debug('name', descriptor.name, 'versions', Object.keys(descriptor.versions))
+  })
 }
 
 function load (conf) {
