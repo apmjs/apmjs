@@ -1,8 +1,8 @@
 const Promise = require('bluebird')
 const Semver = require('semver')
-const Package = require('../package.js')
 const debug = require('debug')('apmjs:tree-node')
 const error = require('../error.js')
+const compliance = require('./compliance.js')
 const npm = require('../npm.js')
 const assert = require('assert')
 const _ = require('lodash')
@@ -28,26 +28,10 @@ TreeNode.create = function (name, parent) {
     })
 }
 
-TreeNode.checkCompliance = function (target) {
-  var node = TreeNode.nodes[target.name]
-  if (node && !Semver.satisfies(target.version, target.semver)) {
-    throw new error.UnmetDependency(node, target)
-  }
-}
-
 TreeNode.prototype.populateChildren = function () {
   debug('populating children for', this.name)
   var dependencies = _.map(this.dependencies, (semver, name) => name)
   return Promise.each(dependencies, name => TreeNode.create(name, this))
-}
-
-TreeNode.prototype.availableVersions = function (versionMap) {
-  var versions = versionMap
-  return _
-    .filter(versions,
-      (descriptor, version) => Semver.satisfies(version, this.semver)
-    )
-    .map(descriptor => new Package(descriptor))
 }
 
 TreeNode.prototype.isRoot = function () {
@@ -55,7 +39,7 @@ TreeNode.prototype.isRoot = function () {
 }
 
 TreeNode.prototype.pickVersion = function (versionMap) {
-  var versions = this.availableVersions(versionMap)
+  var versions = compliance.filterVersions(versionMap, this.semver)
   var msg
   if (_.size(versions) === 0) {
     msg = this.isRoot()
@@ -67,22 +51,13 @@ TreeNode.prototype.pickVersion = function (versionMap) {
 
   var node = TreeNode.nodes[this.name]
   if (node) {
-    complianceWarning(this, node)
+    compliance.check(this, node)
     if (Semver.gt(node.version, latest.version)) {
       latest = node.pkg
     }
     node.setVersion(latest)
   }
   this.setVersion(latest)
-}
-
-function complianceWarning (current, former) {
-  var greater = Semver.gtr(former.version, current.semver) ? former : current
-  var less = current === greater ? former : current
-  var msg = `WARN: multi versions of ${greater.name}, ` +
-    `upgrade ${less.toString(true)} (in ${less.parent.name}) to match ` +
-    `${greater.semver} (as required by ${greater.parent})`
-  console.warn(msg)
 }
 
 TreeNode.prototype.toString = function (isSemantic) {
@@ -103,18 +78,6 @@ TreeNode.prototype.link = function (parent) {
   if (parent && parent.children) {
     parent.children.push(this)
   }
-}
-
-TreeNode.prototype.destroy = function () {
-  if (TreeNode.nodes[this.name] === this) {
-    delete TreeNode.nodes[this.name]
-  }
-  this.removeChildren()
-}
-
-TreeNode.prototype.removeChildren = function () {
-  this.children.forEach(child => child.destroy())
-  this.children = []
 }
 
 module.exports = TreeNode
