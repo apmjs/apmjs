@@ -1,11 +1,11 @@
 const chai = require('chai')
+const expect = chai.expect
 const Promise = require('bluebird')
 const npm = require('../src/npm.js')
 const _ = require('lodash')
 const error = require('../src/error.js')
 const debug = require('debug')('apmjs:test:tree-node')
 const nock = require('nock')
-const expect = chai.expect
 const TreeNode = require('../src/resolver/tree-node.js')
 chai.use(require('sinon-chai'))
 chai.use(require('chai-as-promised'))
@@ -32,7 +32,7 @@ describe('TreeNode', function () {
     return npm.load({registry: 'http://apm'})
   })
   after(() => nock.cleanAll())
-  afterEach(() => (TreeNode.nodes = {}))
+  beforeEach(() => (TreeNode.nodes = {}))
 
   describe('new TreeNode()', function () {
     it('should create child without error', function () {

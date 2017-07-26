@@ -2,7 +2,7 @@ const Promise = require('bluebird')
 const Semver = require('semver')
 const debug = require('debug')('apmjs:tree-node')
 const error = require('../error.js')
-const compliance = require('./compliance.js')
+const Version = require('./version.js')
 const npm = require('../npm.js')
 const assert = require('assert')
 const _ = require('lodash')
@@ -39,25 +39,26 @@ TreeNode.prototype.isRoot = function () {
 }
 
 TreeNode.prototype.pickVersion = function (versionMap) {
-  var versions = compliance.filterVersions(versionMap, this.semver)
-  var msg
-  if (_.size(versions) === 0) {
-    msg = this.isRoot()
+  var maxSatisfiying = Version.maxSatisfyingPackage(versionMap, this.semver)
+
+  if (!maxSatisfiying) {
+    var msg = this.isRoot()
       ? 'empty versions for the root, at least one required'
       : `${this.name}@${this.semver} not available, required by ${this.parent}`
     throw new error.UnmetDependency(msg)
   }
-  var latest = versions.pop()
 
   var node = TreeNode.nodes[this.name]
   if (node) {
-    compliance.check(this, node)
-    if (Semver.gt(node.version, latest.version)) {
-      latest = node.pkg
+    if (node.version !== maxSatisfiying.version) {
+      Version.upgradeWarning(this, node)
     }
-    node.setVersion(latest)
+    if (Semver.gt(node.version, maxSatisfiying.version)) {
+      maxSatisfiying = node.pkg
+    }
+    node.setVersion(maxSatisfiying)
   }
-  this.setVersion(latest)
+  this.setVersion(maxSatisfiying)
 }
 
 TreeNode.prototype.toString = function (isSemantic) {
