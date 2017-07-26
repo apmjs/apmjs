@@ -12,14 +12,11 @@ function TreeNode (name, versions, parent) {
   this.children = []
   parent && this.link(parent)
   this.semver = parent ? parent.dependencies[this.name] : '*'
-  this.versions = this.availableVersions(versions)
-  this.pickVersion()
+  this.pickVersion(versions)
   TreeNode.nodes[this.name] = this
 }
 
 TreeNode.nodes = {}
-
-TreeNode.seq = Promise.resolve()
 
 TreeNode.create = function (name, parent) {
   assert(parent, 'you should create root manually')
@@ -57,44 +54,35 @@ TreeNode.prototype.isRoot = function () {
   return !this.parent
 }
 
-TreeNode.prototype.pickVersion = function () {
-  debug('available versions', this.versions.map(pkg => pkg.version))
+TreeNode.prototype.pickVersion = function (versionMap) {
+  var versions = this.availableVersions(versionMap)
   var msg
-  if (_.size(this.versions) === 0) {
+  if (_.size(versions) === 0) {
     msg = this.isRoot()
       ? 'empty versions for the root, at least one required'
-      : `${this.name}@${this.semver} not available, required by ${this.parent.name}`
+      : `${this.name}@${this.semver} not available, required by ${this.parent}`
     throw new error.UnmetDependency(msg)
   }
+  var latest = versions.pop()
 
   var node = TreeNode.nodes[this.name]
   if (node) {
-    if (Semver.satisfies(node.version, this.semver)) {
-      debug('setting 1')
-      this.setVersion(node.pkg)
-    } else {
-      var greater = Semver.gtr(node.version, this.semver) ? node : this
-      var less = this === greater ? node : this
-      complianceWarning(greater, less)
-      if (node === greater) {
-        this.setVersion(node.pkg)
-      } else {
-        var pkg = this.versions.pop()
-        this.setVersion(pkg)
-        node.setVersion(pkg)
-      }
+    complianceWarning(this, node)
+    if (Semver.gt(node.version, latest.version)) {
+      latest = node.pkg
     }
-  } else {
-    this.setVersion(this.versions.pop())
+    node.setVersion(latest)
   }
+  this.setVersion(latest)
 }
 
-function complianceWarning (greater, less) {
+function complianceWarning (current, former) {
+  var greater = Semver.gtr(former.version, current.semver) ? former : current
+  var less = current === greater ? former : current
   var msg = `WARN: multi versions of ${greater.name}, ` +
     `upgrade ${less.toString(true)} (in ${less.parent.name}) to match ` +
     `${greater.semver} (as required by ${greater.parent})`
   console.warn(msg)
-  console.log('msg', msg)
 }
 
 TreeNode.prototype.toString = function (isSemantic) {
