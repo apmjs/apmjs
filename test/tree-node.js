@@ -1,24 +1,34 @@
 const chai = require('chai')
+const Promise = require('bluebird')
 const npm = require('../src/npm.js')
 const _ = require('lodash')
 const error = require('../src/error.js')
+const debug = require('debug')('apmjs:test:tree-node')
 const nock = require('nock')
 const expect = chai.expect
 const TreeNode = require('../src/resolver/tree-node.js')
+chai.use(require('sinon-chai'))
 chai.use(require('chai-as-promised'))
+require('mocha-sinon')
 
 describe('TreeNode', function () {
   this.timeout(1000)
 
   before(() => {
     nock('http://apm')
-      .log(console.log)
+      .log(debug)
       .get('/foo')
       .reply(200, JSON.stringify(require('./stub/foo.info.json')))
       .get('/bar')
       .reply(200, JSON.stringify(require('./stub/bar.info.json')))
       .get('/baz')
       .reply(200, JSON.stringify(require('./stub/baz.info.json')))
+      .get('/baa')
+      .reply(200, JSON.stringify(require('./stub/baa.info.json')))
+      .get('/coo')
+      .reply(200, JSON.stringify(require('./stub/coo.info.json')))
+      .get('/laa')
+      .reply(200, JSON.stringify(require('./stub/laa.info.json')))
     return npm.load({registry: 'http://apm'})
   })
   after(() => nock.cleanAll())
@@ -61,8 +71,6 @@ describe('TreeNode', function () {
       function gn () { return TreeNode.create('foo', null) }
       expect(gn).to.throw(/create root manually/)
     })
-  })
-  describe('.checkCompliance', function () {
     it('should not throw when creating the same', function () {
       var parent = {name: 'parent', dependencies: {'bar': '1.x'}}
       return TreeNode.create('bar', parent).then(() => {
@@ -99,21 +107,40 @@ describe('TreeNode', function () {
           expect(TreeNode.nodes.bar).to.have.property('version', '1.0.1')
         })
     })
-    it('should throw when not compliant', function () {
-      var parent1 = {name: 'parent1', dependencies: {'bar': '1.0.0'}}
-      var parent2 = {name: 'parent2', dependencies: {'bar': '>=1.0.1'}, fallback: e => { throw e }}
-      return expect(
-          TreeNode
-          .create('bar', parent1)
-          .then(() => TreeNode.create('bar', parent2))
-        )
+    it('should throw when not available', function () {
+      var parent = {name: 'parent', dependencies: {'bar': '2.0.0'}}
+      return expect(TreeNode.create('bar', parent))
         .to.be.rejectedWith(
           error.UnmetDependency,
-          /bar@>=1.0.1 not available, required by parent2/
+          /bar@2.0.0 not available, required by parent/
         )
+    })
+    it('should install newer when not compliant 1', function () {
+      return Promise.each([
+        {name: 'parent2', dependencies: {'bar': '>=1.0.1'}},
+        {name: 'parent1', dependencies: {'bar': '1.0.0'}}
+      ], parent => TreeNode.create('bar', parent))
+      .then(() => {
+        expect(TreeNode.nodes.bar).to.have.property('version', '1.0.1')
+      })
+    })
+    it('should install newer when not compliant 2', function () {
+      return Promise.each([
+        {name: 'parent1', dependencies: {'bar': '1.0.0'}},
+        {name: 'parent2', dependencies: {'bar': '>=1.0.1'}}
+      ], parent => TreeNode.create('bar', parent))
+      .then(() => {
+        expect(TreeNode.nodes.bar).to.have.property('version', '1.0.1')
+      })
     })
   })
   describe('dependency trees', function () {
+    beforeEach(function () {
+      this.sinon.stub(console, 'warn')
+    })
+    afterEach(function () {
+      console.warn.restore()
+    })
     it('should install latest available', function () {
       var root = new TreeNode('root', {'1.0.0': {
         name: 'root',
@@ -132,6 +159,34 @@ describe('TreeNode', function () {
       return root.populateChildren().then(() => {
         expect(_.size(TreeNode.nodes)).to.equal(3)
         expect(TreeNode.nodes.baz).to.have.property('version', '1.0.1')
+      })
+    })
+    it('should reuse installed compatible package', function () {
+      var root = new TreeNode('root', {'1.0.0': {
+        name: 'root',
+        dependencies: { bar: '1.0.0', baa: '1.0.0' }
+      }})
+      return root.populateChildren().then(() => {
+        expect(_.size(TreeNode.nodes)).to.equal(3)
+        expect(TreeNode.nodes.bar).to.have.property('version', '1.0.0')
+      })
+    })
+    it('should warn to upgrade former packages', function () {
+      var root = new TreeNode('root', {'1.0.0': {
+        name: 'root',
+        dependencies: { bar: '1.0.0', coo: '1.0.x' }
+      }})
+      return root.populateChildren().then(() => {
+        expect(console.warn).to.have.been.calledWith('WARN: multi versions of bar, upgrade bar@1.0.0 (in root) to match 1.0.1 (as required by coo@1.0.1)')
+      })
+    })
+    it('should warn to upgrade latter packages', function () {
+      var root = new TreeNode('root', {'1.0.0': {
+        name: 'root',
+        dependencies: { bar: '1.0.x', laa: '1.0.0' }
+      }})
+      return root.populateChildren().then(() => {
+        expect(console.warn).to.have.been.calledWith('WARN: multi versions of bar, upgrade bar@1.0.0 (in laa) to match 1.0.x (as required by root@0.0.0)')
       })
     })
   })

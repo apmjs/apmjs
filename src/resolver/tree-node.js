@@ -10,14 +10,11 @@ const _ = require('lodash')
 function TreeNode (name, versions, parent) {
   this.name = name
   this.children = []
+  parent && this.link(parent)
   this.semver = parent ? parent.dependencies[this.name] : '*'
-  this.versions = versions
-  this.pickVersion(parent ? parent.name : undefined)
-  if (parent) {
-    this.link(parent)
-  } else {
-    TreeNode.nodes[this.name] = this
-  }
+  this.versions = this.availableVersions(versions)
+  this.pickVersion()
+  TreeNode.nodes[this.name] = this
 }
 
 TreeNode.nodes = {}
@@ -32,12 +29,6 @@ TreeNode.create = function (name, parent) {
       var node = new TreeNode(name, info.versions, parent)
       return node.populateChildren().then(() => node)
     })
-    .catch(err => {
-      if (err instanceof error.UnmetDependency) {
-        return parent.fallback(err)
-      }
-      throw err
-    })
 }
 
 TreeNode.checkCompliance = function (target) {
@@ -49,35 +40,66 @@ TreeNode.checkCompliance = function (target) {
 
 TreeNode.prototype.populateChildren = function () {
   debug('populating children for', this.name)
-  return Promise.all(_.map(
-    this.dependencies,
-    (dep, name) => TreeNode.create(name, this)
-  ))
+  var dependencies = _.map(this.dependencies, (semver, name) => name)
+  return Promise.each(dependencies, name => TreeNode.create(name, this))
 }
 
-TreeNode.prototype.pickVersion = function (parentName) {
-  var node = TreeNode.nodes[this.name]
-  if (node) {
-    this.versions = {}
-    this.versions[node.version] = node.pkg
-  }
-  debug('pickVersion for', this.name, 'in', _.keys(this.versions))
-  debug(this.versions)
-  this.versions = _
-    .filter(this.versions,
+TreeNode.prototype.availableVersions = function (versionMap) {
+  var versions = versionMap
+  return _
+    .filter(versions,
       (descriptor, version) => Semver.satisfies(version, this.semver)
     )
     .map(descriptor => new Package(descriptor))
+}
 
+TreeNode.prototype.isRoot = function () {
+  return !this.parent
+}
+
+TreeNode.prototype.pickVersion = function () {
   debug('available versions', this.versions.map(pkg => pkg.version))
+  var msg
   if (_.size(this.versions) === 0) {
-    if (parentName === undefined) {
-      throw new Error('empty versions for the root, specify at least one version of root')
-    }
-    var msg = `${this.name}@${this.semver} not available, required by ${parentName}`
+    msg = this.isRoot()
+      ? 'empty versions for the root, at least one required'
+      : `${this.name}@${this.semver} not available, required by ${this.parent.name}`
     throw new error.UnmetDependency(msg)
   }
-  this.setVersion(this.versions.pop())
+
+  var node = TreeNode.nodes[this.name]
+  if (node) {
+    if (Semver.satisfies(node.version, this.semver)) {
+      debug('setting 1')
+      this.setVersion(node.pkg)
+    } else {
+      var greater = Semver.gtr(node.version, this.semver) ? node : this
+      var less = this === greater ? node : this
+      complianceWarning(greater, less)
+      if (node === greater) {
+        this.setVersion(node.pkg)
+      } else {
+        var pkg = this.versions.pop()
+        this.setVersion(pkg)
+        node.setVersion(pkg)
+      }
+    }
+  } else {
+    this.setVersion(this.versions.pop())
+  }
+}
+
+function complianceWarning (greater, less) {
+  var msg = `WARN: multi versions of ${greater.name}, ` +
+    `upgrade ${less.toString(true)} (in ${less.parent.name}) to match ` +
+    `${greater.semver} (as required by ${greater.parent})`
+  console.warn(msg)
+  console.log('msg', msg)
+}
+
+TreeNode.prototype.toString = function (isSemantic) {
+  var version = isSemantic ? this.semver : this.version
+  return this.name + '@' + version
 }
 
 TreeNode.prototype.setVersion = function (pkg) {
@@ -87,46 +109,12 @@ TreeNode.prototype.setVersion = function (pkg) {
   this.version = pkg.version
 }
 
-TreeNode.prototype.tryAppendChild = function (name, parent) {
-  return TreeNode.create(name, parent)
-    .then(node => TreeNode.checkCompliance(node))
-    .catch(err => {
-      if (err instanceof error.UnmetDependency) {
-        return err.target.fallback(err)
-      }
-      throw err
-    })
-}
-
-TreeNode.prototype.fallback = function (err) {
-  if (!this.versions.length) {
-    return this.parent ? this.parent.fallback(err) : Promise.reject(err)
-  }
-  this.setVersion(this.versions.pop())
-  this.removeChildren()
-}
-
-TreeNode.prototype.remove = function () {
-  this.unlink()
-  this.destroy()
-}
-
 TreeNode.prototype.link = function (parent) {
   debug('linking', this.name, 'to', parent.name)
-  TreeNode.nodes[this.name] = this
   this.parent = parent
   if (parent && parent.children) {
     parent.children.push(this)
   }
-}
-
-TreeNode.prototype.unlink = function () {
-  assert(this.parent, 'parent undefined')
-  var idx = this.parent.children.indexOf(this)
-  if (idx > -1) {
-    this.parent.children.splice(idx, 1)
-  }
-  this.parent = null
 }
 
 TreeNode.prototype.destroy = function () {

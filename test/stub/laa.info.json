@@ -1,0 +1,12 @@
+{
+  "name": "laa",
+  "versions": {
+    "1.0.0": {
+      "name": "laa",
+      "version": "1.0.0",
+      "dependencies": {
+        "bar": "1.0.0"
+      }
+    }
+  }
+}

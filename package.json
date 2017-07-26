@@ -28,6 +28,7 @@
     "eslint-plugin-standard": "^3.0.1",
     "istanbul": "^0.4.3",
     "mocha": "^3.0.2",
+    "mocha-sinon": "^2.0.0",
     "mock-fs": "^4.4.1",
     "nock": "^9.0.14",
     "sinon": "^1.17.4",

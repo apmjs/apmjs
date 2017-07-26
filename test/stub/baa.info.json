@@ -1,0 +1,13 @@
+{
+  "name": "baa",
+  "versions": {
+    "1.0.0": {
+      "name": "baa",
+      "version": "1.0.0",
+      "dependencies": {
+        "bar": "1.0.x"
+      }
+    }
+  }
+}
+
