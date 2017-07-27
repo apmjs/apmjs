@@ -8,7 +8,7 @@ const fs = require('fs-extra')
 const tarball = require('tarball-extract')
 const _ = require('lodash')
 
-var config = {registry: 'http://registry.npm.com'}
+var config = {registry: 'http://apmjs.baidu.com'}
 
 function downloadPackage (url, dir) {
   var name = path.basename(url)

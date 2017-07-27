@@ -65,11 +65,17 @@
     npm.command = 'help'
   }
 
+  Object.defineProperty(npm.commands, 'install', {
+    get: function () {
+      return require('../src/commands/install.js')
+    }
+  })
+
   // now actually fire up npm and run the command.
   // this is how to use npm programmatically:
   conf._exit = true
   npm.load(conf, function (er) {
     if (er) return errorHandler(er)
-    npm.commands[npm.command](npm.argv, errorHandler)
+    npm.commands[npm.command](npm.argv, errorHandler, conf)
   })
 })()

@@ -49,7 +49,7 @@ describe('TreeNode', function () {
   })
   describe('#pickVersion', function () {
     it('should throw EUNMET if no version available', function () {
-      var parent = {name: 'mine', dependencies: {'foo': '1.0.x'}, toString: () => 'mine'}
+      var parent = {name: 'mine', dependencies: {'foo': '1.0.x'}, toString: () => 'mine', addDependency: TreeNode.prototype.addDependency}
       function gn () { return new TreeNode('foo', {}, parent) }
       expect(gn).to.throw('foo@1.0.x not available, required by mine')
     })
@@ -60,47 +60,43 @@ describe('TreeNode', function () {
   })
   describe('.create', function () {
     it('should retrieve info and create', function () {
-      var parent = {name: 'parent', dependencies: {'foo': '1.0.x'}}
-      return TreeNode.create('foo', parent).then(foo => {
+      var parent = {name: 'parent', dependencies: {'foo': '1.0.x'}, addDependency: TreeNode.prototype.addDependency}
+      return parent.addDependency('foo').then(foo => {
         expect(foo.name).to.equal('foo')
         expect(foo.semver).to.equal('1.0.x')
         expect(foo.pkg.version).to.equal('1.0.0')
       })
     })
-    it('should throw when trying to create root', function () {
-      function gn () { return TreeNode.create('foo', null) }
-      expect(gn).to.throw(/create root manually/)
-    })
     it('should not throw when creating the same', function () {
-      var parent = {name: 'parent', dependencies: {'bar': '1.x'}}
-      return TreeNode.create('bar', parent).then(() => {
-        expect(TreeNode.create('bar', parent)).to.be.fulfilled
+      var parent = {name: 'parent', dependencies: {'bar': '1.x'}, addDependency: TreeNode.prototype.addDependency}
+      return parent.addDependency('bar').then(() => {
+        expect(parent.addDependency('bar')).to.be.fulfilled
       })
     })
     it('should not throw when creating the same parallel', function () {
-      var parent = {name: 'parent', dependencies: {'bar': '1.x'}}
+      var parent = {name: 'parent', dependencies: {'bar': '1.x'}, addDependency: TreeNode.prototype.addDependency}
       return expect(Promise
         .all([
-          TreeNode.create('bar', parent),
-          TreeNode.create('bar', parent)
+          parent.addDependency('bar'),
+          parent.addDependency('bar')
         ]))
         .to.be.fulfilled
     })
     it('should not create new if already exist', function () {
-      var parent = {name: 'parent', dependencies: {'bar': '1.x'}}
+      var parent = {name: 'parent', dependencies: {'bar': '1.x'}, addDependency: TreeNode.prototype.addDependency}
       expect(_.size(TreeNode.nodes)).to.equal(0)
       return Promise
         .all([
-          TreeNode.create('bar', parent),
-          TreeNode.create('bar', parent)
+          parent.addDependency('bar'),
+          parent.addDependency('bar')
         ])
         .then(() => expect(_.size(TreeNode.nodes)).to.equal(1))
     })
     it('should create when compliant', function () {
-      var parent1 = {name: 'parent1', dependencies: {'bar': '>=1.0.1'}}
-      var parent2 = {name: 'parent2', dependencies: {'bar': '1.0.x'}}
-      return TreeNode.create('bar', parent1)
-        .then(() => TreeNode.create('bar', parent2))
+      var parent1 = {name: 'parent1', dependencies: {'bar': '>=1.0.1'}, addDependency: TreeNode.prototype.addDependency}
+      var parent2 = {name: 'parent2', dependencies: {'bar': '1.0.x'}, addDependency: TreeNode.prototype.addDependency}
+      return parent1.addDependency('bar')
+        .then(() => parent2.addDependency('bar'))
         .then(() => {
           expect(_.size(TreeNode.nodes)).to.equal(1)
           expect(TreeNode.nodes.bar).to.have.property('name', 'bar')
@@ -108,8 +104,8 @@ describe('TreeNode', function () {
         })
     })
     it('should throw when not available', function () {
-      var parent = {name: 'parent', dependencies: {'bar': '2.0.0'}, toString: () => 'parent'}
-      return expect(TreeNode.create('bar', parent))
+      var parent = {name: 'parent', dependencies: {'bar': '2.0.0'}, toString: () => 'parent', addDependency: TreeNode.prototype.addDependency}
+      return expect(parent.addDependency('bar'))
         .to.be.rejectedWith(
           error.UnmetDependency,
           /bar@2.0.0 not available, required by parent/
@@ -117,18 +113,18 @@ describe('TreeNode', function () {
     })
     it('should install newer when not compliant 1', function () {
       return Promise.each([
-        {name: 'parent2', dependencies: {'bar': '>=1.0.1'}, toString: () => 'parent2'},
-        {name: 'parent1', dependencies: {'bar': '1.0.0'}, toString: () => 'parent1'}
-      ], parent => TreeNode.create('bar', parent))
+        {name: 'parent2', dependencies: {'bar': '>=1.0.1'}, toString: () => 'parent2', addDependency: TreeNode.prototype.addDependency},
+        {name: 'parent1', dependencies: {'bar': '1.0.0'}, toString: () => 'parent1', addDependency: TreeNode.prototype.addDependency}
+      ], parent => parent.addDependency('bar'))
       .then(() => {
         expect(TreeNode.nodes.bar).to.have.property('version', '1.0.1')
       })
     })
     it('should install newer when not compliant 2', function () {
       return Promise.each([
-        {name: 'parent1', dependencies: {'bar': '1.0.0'}, toString: () => 'parent1'},
-        {name: 'parent2', dependencies: {'bar': '>=1.0.1'}, toString: () => 'parent2'}
-      ], parent => TreeNode.create('bar', parent))
+        {name: 'parent1', dependencies: {'bar': '1.0.0'}, toString: () => 'parent1', addDependency: TreeNode.prototype.addDependency},
+        {name: 'parent2', dependencies: {'bar': '>=1.0.1'}, toString: () => 'parent2', addDependency: TreeNode.prototype.addDependency}
+      ], parent => parent.addDependency('bar'))
       .then(() => {
         expect(TreeNode.nodes.bar).to.have.property('version', '1.0.1')
       })

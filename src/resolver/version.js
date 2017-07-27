@@ -16,6 +16,12 @@ function upgradeWarning (installing, installed) {
   console.warn(msg)
 }
 
+function abstract (version) {
+  var nums = version.split('.')
+  nums[nums.length - 1] = 'x'
+  return nums.join('.')
+}
+
 module.exports = {
-  upgradeWarning, maxSatisfyingPackage
+  upgradeWarning, maxSatisfyingPackage, abstract
 }

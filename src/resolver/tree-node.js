@@ -4,26 +4,41 @@ const debug = require('debug')('apmjs:tree-node')
 const error = require('../error.js')
 const Version = require('./version.js')
 const npm = require('../npm.js')
-const assert = require('assert')
 const _ = require('lodash')
 
 function TreeNode (name, versions, parent) {
   this.name = name
   this.children = []
-  parent && this.link(parent)
-  this.semver = parent ? parent.dependencies[this.name] : '*'
+  if (parent) {
+    this.link(parent)
+  }
+  this.semver = this.getSemver(versions)
   this.pickVersion(versions)
   TreeNode.nodes[this.name] = this
 }
 
 TreeNode.nodes = {}
 
-TreeNode.create = function (name, parent) {
-  assert(parent, 'you should create root manually')
+TreeNode.packageList = function () {
+  return _.map(TreeNode.nodes, node => node.pkg)
+}
+
+TreeNode.prototype.getSemver = function (versionMap) {
+  if (!this.parent) {
+    return '*'
+  }
+  if (_.has(this.parent.dependencies, this.name)) {
+    return this.parent.dependencies[this.name]
+  }
+  var last = _.chain(versionMap).keys().sort().last().value()
+  return last ? Version.abstract(last) : '*'
+}
+
+TreeNode.prototype.addDependency = function (name) {
   return npm
     .getPackageInfo(name)
     .then(info => {
-      var node = new TreeNode(name, info.versions, parent)
+      var node = new TreeNode(name, info.versions, this)
       return node.populateChildren().then(() => node)
     })
 }
@@ -31,7 +46,7 @@ TreeNode.create = function (name, parent) {
 TreeNode.prototype.populateChildren = function () {
   debug('populating children for', this.name)
   var dependencies = _.map(this.dependencies, (semver, name) => name)
-  return Promise.each(dependencies, name => TreeNode.create(name, this))
+  return Promise.each(dependencies, name => this.addDependency(name))
 }
 
 TreeNode.prototype.isRoot = function () {

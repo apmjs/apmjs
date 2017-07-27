@@ -1,11 +1,12 @@
 const assert = require('assert')
 const fs = require('fs-extra')
+const debug = require('debug')('apmjs:package')
 const changeCase = require('change-case')
 const path = require('path')
 const Promise = require('bluebird')
 
 function Package (descriptor, pathname) {
-  assert(descriptor.name, 'package name not defined:' + descriptor)
+  assert(descriptor.name, 'package name not defined for ' + pathname)
 
   this.version = descriptor.version || '0.0.0'
   this.name = changeCase.camelCase(descriptor.name)
@@ -14,6 +15,22 @@ function Package (descriptor, pathname) {
   if (pathname) {
     this.setPathname(pathname)
   }
+}
+
+Package.load = function (pathname) {
+  return Promise
+    .resolve(path.resolve(pathname, 'package.json'))
+    .then(filepath => fs.readJson(filepath))
+    .then(descriptor => new Package(descriptor, pathname))
+}
+
+Package.prototype.setDirname = function (dirname) {
+  var pathname = path.resolve(dirname, this.name)
+  return this.setPathname(pathname)
+}
+
+Package.prototype.equalTo = function (another) {
+  return another && this.name === another.name && this.version === another.version
 }
 
 Package.prototype.setPathname = function (pathname) {

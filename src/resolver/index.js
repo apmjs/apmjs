@@ -1,13 +1,10 @@
-const _ = require('lodash')
-const Tree = require('./tree')
 const TreeNode = require('./tree-node.js')
 
-function resolve (pkg) {
-  var root = new Tree()
-  _.forOwn(pkg.descriptor.dependencies, (semver, name) => {
-    var node = new TreeNode(name, semver)
-    root.tryInstall(node, root)
-  })
+function loadRoot (pkg) {
+  var versionMap = {}
+  versionMap[pkg.version] = pkg
+  console.log(versionMap)
+  return new TreeNode(pkg.name, versionMap)
 }
 
-module.exports = resolve
+module.exports = {loadRoot}
