@@ -1,5 +1,6 @@
 const url = require('url')
-const request = require('request')
+const error = require('./error.js')
+const rp = require('request-promise')
 const Promise = require('bluebird')
 const debug = require('debug')('apmjs:npm')
 const path = require('path')
@@ -25,16 +26,30 @@ function downloadPackage (url, dir) {
 
 var infoCache = {}
 
-function getPackageInfo (name) {
+function getPackageInfo (name, parent) {
   if (infoCache[name]) {
     return infoCache[name]
   }
-  return (infoCache[name] = new Promise((resolve, reject) => {
-    var opts = {url: url.resolve(config.registry, name), json: true}
-    request.get(opts, (e, r, user) => e ? reject(e) : resolve(user))
-  })).tap(descriptor => {
+  infoCache[name] = rp({
+    url: url.resolve(config.registry, name),
+    json: true
+  })
+  .promise()
+  .then(res => {
+    console.log('sssss', res)
+    return res
+  })
+  .catch(e => {
+    if (e.statusCode === 404) {
+      throw new error.PackageNotFound(name, parent)
+    } else {
+      throw e
+    }
+  })
+  .tap(descriptor => {
     debug('name', descriptor.name, 'versions', Object.keys(descriptor.versions))
   })
+  return infoCache[name]
 }
 
 function load (conf) {

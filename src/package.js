@@ -37,6 +37,17 @@ Package.prototype.setPathname = function (pathname) {
   var descriptor = this.descriptor
   var filepath = descriptor.browser || descriptor.index || 'index.js'
   this.filepath = path.resolve(pathname, filepath)
+  this.descriptorPath = path.resolve(pathname, 'package.json')
+}
+
+Package.prototype.save = function () {
+  var file = this.descriptorPath
+  return fs
+    .readJson(file)
+    .then(pkg => {
+      pkg.dependencies = this.dependencies
+      return fs.writeJson(file, pkg)
+    })
 }
 
 Package.prototype.read = function () {

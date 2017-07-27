@@ -36,7 +36,7 @@ TreeNode.prototype.getSemver = function (versionMap) {
 
 TreeNode.prototype.addDependency = function (name) {
   return npm
-    .getPackageInfo(name)
+    .getPackageInfo(name, this.pkg)
     .then(info => {
       var node = new TreeNode(name, info.versions, this)
       return node.populateChildren().then(() => node)

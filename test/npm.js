@@ -16,6 +16,8 @@ describe('npm', function () {
       .log(console.log)
       .get('/foo')
       .reply(200, JSON.stringify(fooInfo))
+      .get('/xxx')
+      .reply(404, 'Not Found')
       .get('/foo/-/foo-1.0.0.tgz')
       .replyWithFile(200, fooTgz)
     return npm.load({registry: 'http://apm'})
@@ -36,6 +38,11 @@ describe('npm', function () {
             }
           })
         })
+    })
+    it('should throw on non-exist package', function () {
+      var pending = npm.getPackageInfo('xxx', {name: 'foo'})
+      var msg = 'package xxx not found, required by foo'
+      return expect(pending).to.eventually.be.rejectedWith(msg)
     })
   })
   describe('downloadPackage', function () {
