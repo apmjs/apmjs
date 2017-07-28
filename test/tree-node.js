@@ -21,7 +21,7 @@ describe('TreeNode', function () {
     .reduce((server, id) => {
       var file = path.resolve(__dirname, `stub/${id}.info.json`)
       return server.get(`/${id}`).reply(200, fs.readFileSync(file))
-    }, nock('http://apm').log(debug))
+    }, nock('http://apm'))
     return npm.load({registry: 'http://apm'})
   })
   after(() => nock.cleanAll())
@@ -135,6 +135,21 @@ describe('TreeNode', function () {
         expect(TreeNode.nodes.bar).to.have.property('version', '1.0.1')
       })
     })
+    it('should remove isolated node', function () {
+      var root = new TreeNode({
+        version: '0.0.1',
+        name: 'root',
+        dependencies: { haa: '1.0.0' }
+      })
+      return root.populateChildren()
+      .then(() => {
+        expect(_.size(TreeNode.nodes)).to.equal(4)
+        return root.addDependency('hoo')
+      })
+      .then(() => {
+        expect(_.size(TreeNode.nodes)).to.equal(4)
+      })
+    })
   })
   describe('dependency trees', function () {
     beforeEach(function () {
@@ -186,23 +201,6 @@ describe('TreeNode', function () {
         var msg = 'WARN: multi versions of bar, upgrade bar@1.0.0 (in laa@1.0.0) to match 1.0.x (as required by root@0.0.1)'
         expect(console.warn).to.have.been.called
         expect(console.warn.args[0][0]).to.equal(msg)
-      })
-    })
-  })
-  describe('#addDependency()', function () {
-    it('should remove isolated node', function () {
-      var root = new TreeNode({
-        version: '0.0.1',
-        name: 'root',
-        dependencies: { haa: '1.0.0' }
-      })
-      return root.populateChildren()
-      .then(() => {
-        expect(_.size(TreeNode.nodes)).to.equal(4)
-        return root.addDependency('hoo')
-      })
-      .then(() => {
-        expect(_.size(TreeNode.nodes)).to.equal(4)
       })
     })
   })

@@ -48,13 +48,23 @@ TreeNode.prototype.addDependency = function (name, semver) {
 }
 
 TreeNode.prototype.upgradeIfNeeded = function (pkg) {
-  if (Semver.lt(this.version, pkg.version)) {
-    return this.setPackage(pkg)
+  if (Semver.gte(this.version, pkg.version)) {
+    return
   }
+  this.setPackage(pkg)
+  this.prune()
+}
+
+TreeNode.prototype.prune = function () {
+  var installed = _.keys(this.children)
+  var needed = _.keys(this.dependencies)
+  var isolated = _.difference(installed, needed)
+  debug(`pruning isolated packages for ${this}`, isolated)
+  _.forEach(isolated, name => this.children[name].remove(this))
 }
 
 TreeNode.prototype.checkComformance = function (pkg, semver, parent) {
-  debug('checking comformance between', `${pkg.name}@${pkg.version} and`, this.toString())
+  debug('checking comformance between', `${pkg.name}@${pkg.version} and ${this}`)
   if (this.version === pkg.version) {
     return
   }
@@ -73,8 +83,8 @@ TreeNode.prototype.checkComformance = function (pkg, semver, parent) {
 }
 
 TreeNode.prototype.populateChildren = function () {
-  var dependencies = _.map(this.dependencies, (semver, name) => name)
-  debug('populating children', dependencies, 'for', this.toString())
+  var dependencies = _.keys(this.dependencies)
+  debug(`populating children ${dependencies} for ${this}`)
   return Promise.each(dependencies, name => this.addDependency(name))
 }
 
@@ -93,7 +103,7 @@ TreeNode.prototype.latestPackage = function (info, semver) {
 }
 
 TreeNode.prototype.toString = function () {
-  return this.name + '@' + this.version
+  return Package.prototype.toString.call(this)
 }
 
 TreeNode.prototype.setPackage = function (pkg) {
@@ -111,17 +121,15 @@ TreeNode.prototype.appendChild = function (child, semver) {
   this.children[child.name] = child
 }
 
-TreeNode.prototype.remove = function () {
+TreeNode.prototype.remove = function (parent) {
   debug('removing node', this.toString())
-  _.forEach(this.children, child => child.remove())
-  // delete this.parents[].children[this.name]
-  // this.parents[] = null
-  this.deReference()
-}
+  _.forEach(this.children, child => child.remove(this))
 
-TreeNode.prototype.deReference = function () {
-  TreeNode.referenceCounts[this.name] --
-  if (TreeNode.referenceCounts[this.name] <= 0) {
+  delete this.parents[parent.name].children[this.name]
+  delete this.parents[parent.name]
+
+  this.referenceCount--
+  if (this.referenceCount <= 0) {
     delete TreeNode.nodes[this.name]
   }
 }

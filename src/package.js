@@ -25,6 +25,10 @@ Package.load = function (pathname) {
     .then(descriptor => new Package(descriptor, pathname))
 }
 
+Package.prototype.toString = function () {
+  return this.name + '@' + this.version
+}
+
 Package.maxSatisfying = function (versionMap, semver) {
   var descriptor = Version.maxSatisfying(versionMap, semver)
   return descriptor && new Package(descriptor)
