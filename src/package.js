@@ -1,4 +1,5 @@
 const assert = require('assert')
+const Version = require('./resolver/version.js')
 const fs = require('fs-extra')
 const debug = require('debug')('apmjs:package')
 const changeCase = require('change-case')
@@ -22,6 +23,11 @@ Package.load = function (pathname) {
     .resolve(path.resolve(pathname, 'package.json'))
     .then(filepath => fs.readJson(filepath))
     .then(descriptor => new Package(descriptor, pathname))
+}
+
+Package.maxSatisfying = function (versionMap, semver) {
+  var descriptor = Version.maxSatisfying(versionMap, semver)
+  return descriptor && new Package(descriptor)
 }
 
 Package.prototype.setDirname = function (dirname) {
@@ -63,6 +69,10 @@ Package.prototype.distname = function (dirname) {
   dirname = dirname || ''
   var filename = changeCase.paramCase(this.name) + '.js'
   return path.resolve(dirname, filename)
+}
+
+Package.prototype.toString = function () {
+  return this.name + '@' + this.version
 }
 
 module.exports = Package

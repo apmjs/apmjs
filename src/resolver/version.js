@@ -1,18 +1,18 @@
 const Semver = require('semver')
-const Package = require('../package.js')
+const _ = require('lodash')
 
-function maxSatisfyingPackage (versionMap, semver) {
-  var versions = Object.keys(versionMap)
+function maxSatisfying (versionMap, semver) {
+  var versions = _.keys(versionMap)
   var version = Semver.maxSatisfying(versions, semver)
-  return version ? new Package(versionMap[version]) : null
+  return version ? versionMap[version] : null
 }
 
-function upgradeWarning (installing, installed) {
-  var greater = Semver.gtr(installed.version, installing.semver) ? installed : installing
-  var less = installing === greater ? installed : installing
-  var msg = `WARN: multi versions of ${greater.name}, ` +
-    `upgrade ${less.toString(true)} (in ${less.parent.name}) to match ` +
-    `${greater.semver} (as required by ${greater.parent})`
+function upgradeWarning (name, lhs, rhs) {
+  var greater = Semver.gt(lhs.version, rhs.version) ? lhs : rhs
+  var less = lhs === greater ? rhs : lhs
+  var msg = `WARN: multi versions of ${name}, ` +
+    `upgrade ${name}@${less.required} (in ${less.parent}) to match ` +
+    `${greater.required} (as required by ${greater.parent})`
   console.warn(msg)
 }
 
@@ -23,5 +23,5 @@ function abstract (version) {
 }
 
 module.exports = {
-  upgradeWarning, maxSatisfyingPackage, abstract
+  upgradeWarning, maxSatisfying, abstract
 }

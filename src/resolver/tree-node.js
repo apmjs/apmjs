@@ -1,4 +1,5 @@
 const Promise = require('bluebird')
+const Package = require('../package.js')
 const Semver = require('semver')
 const debug = require('debug')('apmjs:tree-node')
 const error = require('../error.js')
@@ -6,14 +7,11 @@ const Version = require('./version.js')
 const npm = require('../npm.js')
 const _ = require('lodash')
 
-function TreeNode (name, versions, parent) {
-  this.name = name
+function TreeNode (pkg, required) {
+  this.name = pkg.name
   this.children = []
-  if (parent) {
-    this.link(parent)
-  }
-  this.semver = this.getSemver(versions)
-  this.pickVersion(versions)
+  this.required = required || 'ROOT'
+  this.setPackage(pkg)
   TreeNode.nodes[this.name] = this
 }
 
@@ -38,8 +36,14 @@ TreeNode.prototype.addDependency = function (name) {
   return npm
     .getPackageInfo(name, this.pkg)
     .then(info => {
-      var node = new TreeNode(name, info.versions, this)
+      var semver = this.dependencies[name]
+      var pkg = this.pickChildPackage(info, semver)
+      var node = new TreeNode(pkg, semver)
       return node.populateChildren().then(() => node)
+    })
+    .then(node => {
+      this.appendChild(node)
+      return node
     })
 }
 
@@ -53,47 +57,49 @@ TreeNode.prototype.isRoot = function () {
   return !this.parent
 }
 
-TreeNode.prototype.pickVersion = function (versionMap) {
-  var maxSatisfiying = Version.maxSatisfyingPackage(versionMap, this.semver)
+TreeNode.prototype.pickChildPackage = function (info, semver) {
+  var name = info.name
+  var maxSatisfiying = Package.maxSatisfying(info.versions, semver)
 
   if (!maxSatisfiying) {
-    var msg = this.isRoot()
-      ? 'empty versions for the root, at least one required'
-      : `${this.name}@${this.semver} not available, required by ${this.parent}`
+    var msg = this
+      ? `${name}@${semver} not available, required by ${this}`
+      : 'empty versions for the root, at least one required'
     throw new error.UnmetDependency(msg)
   }
 
-  var node = TreeNode.nodes[this.name]
-  if (node) {
-    if (node.version !== maxSatisfiying.version) {
-      Version.upgradeWarning(this, node)
+  var installed = TreeNode.nodes[name]
+  if (installed) {
+    if (installed.version !== maxSatisfiying.version) {
+      var installing = {
+        version: maxSatisfiying.version,
+        required: semver,
+        parent: this
+      }
+      Version.upgradeWarning(name, installed, installing)
     }
-    if (Semver.gt(node.version, maxSatisfiying.version)) {
-      maxSatisfiying = node.pkg
+    if (Semver.gt(installed.version, maxSatisfiying.version)) {
+      maxSatisfiying = installed.pkg
     }
-    node.setVersion(maxSatisfiying)
+    installed.setPackage(maxSatisfiying)
   }
-  this.setVersion(maxSatisfiying)
+  return maxSatisfiying
 }
 
-TreeNode.prototype.toString = function (isSemantic) {
-  var version = isSemantic ? this.semver : this.version
-  return this.name + '@' + version
+TreeNode.prototype.toString = function () {
+  return this.name + '@' + this.version
 }
 
-TreeNode.prototype.setVersion = function (pkg) {
-  debug('setVersion for', pkg.name, 'to', pkg.version)
+TreeNode.prototype.setPackage = function (pkg) {
+  debug('setPackage for', pkg.name, 'to', pkg.version)
   this.pkg = pkg
   this.dependencies = pkg.dependencies || {}
   this.version = pkg.version
 }
 
-TreeNode.prototype.link = function (parent) {
-  debug('linking', this.name, 'to', parent.name)
-  this.parent = parent
-  if (parent && parent.children) {
-    parent.children.push(this)
-  }
+TreeNode.prototype.appendChild = function (child) {
+  child.parent = this
+  this.children.push(child)
 }
 
 module.exports = TreeNode

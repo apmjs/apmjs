@@ -35,10 +35,6 @@ function getPackageInfo (name, parent) {
     json: true
   })
   .promise()
-  .then(res => {
-    console.log('sssss', res)
-    return res
-  })
   .catch(e => {
     if (e.statusCode === 404) {
       throw new error.PackageNotFound(name, parent)
