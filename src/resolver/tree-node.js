@@ -21,22 +21,11 @@ TreeNode.packageList = function () {
   return _.map(TreeNode.nodes, node => node.pkg)
 }
 
-TreeNode.prototype.getSemver = function (versionMap) {
-  if (!this.parent) {
-    return '*'
-  }
-  if (_.has(this.parent.dependencies, this.name)) {
-    return this.parent.dependencies[this.name]
-  }
-  var last = _.chain(versionMap).keys().sort().last().value()
-  return last ? Version.abstract(last) : '*'
-}
-
 TreeNode.prototype.addDependency = function (name) {
   return npm
     .getPackageInfo(name, this.pkg)
     .then(info => {
-      var semver = this.dependencies[name]
+      var semver = this.dependencies[name] || Version.derive(info)
       var pkg = this.pickChildPackage(info, semver)
       var node = new TreeNode(pkg, semver)
       return node.populateChildren().then(() => node)

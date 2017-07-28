@@ -16,12 +16,16 @@ function upgradeWarning (name, lhs, rhs) {
   console.warn(msg)
 }
 
-function abstract (version) {
-  var nums = version.split('.')
+function derive (info) {
+  var lastVersion = _.chain(info.versions).keys().sort().last().value()
+  if (!lastVersion) {
+    return '1.0.x'
+  }
+  var nums = lastVersion.split('.')
   nums[nums.length - 1] = 'x'
   return nums.join('.')
 }
 
 module.exports = {
-  upgradeWarning, maxSatisfying, abstract
+  upgradeWarning, maxSatisfying, derive
 }

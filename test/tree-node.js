@@ -1,4 +1,6 @@
 const chai = require('chai')
+const path = require('path')
+const fs = require('fs-extra')
 const expect = chai.expect
 const Promise = require('bluebird')
 const npm = require('../src/npm.js')
@@ -15,20 +17,11 @@ describe('TreeNode', function () {
   this.timeout(1000)
 
   before(() => {
-    nock('http://apm')
-      .log(debug)
-      .get('/foo')
-      .reply(200, JSON.stringify(require('./stub/foo.info.json')))
-      .get('/bar')
-      .reply(200, JSON.stringify(require('./stub/bar.info.json')))
-      .get('/baz')
-      .reply(200, JSON.stringify(require('./stub/baz.info.json')))
-      .get('/baa')
-      .reply(200, JSON.stringify(require('./stub/baa.info.json')))
-      .get('/coo')
-      .reply(200, JSON.stringify(require('./stub/coo.info.json')))
-      .get('/laa')
-      .reply(200, JSON.stringify(require('./stub/laa.info.json')))
+    ['foo', 'bar', 'baz', 'baa', 'coo', 'laa', 'hoo', 'haa']
+    .reduce((server, id) => {
+      var file = path.resolve(__dirname, `stub/${id}.info.json`)
+      return server.get(`/${id}`).reply(200, fs.readFileSync(file))
+    }, nock('http://apm').log(debug))
     return npm.load({registry: 'http://apm'})
   })
   after(() => nock.cleanAll())
@@ -168,6 +161,21 @@ describe('TreeNode', function () {
         var msg = 'WARN: multi versions of bar, upgrade bar@1.0.0 (in laa@1.0.0) to match 1.0.x (as required by root@0.0.1)'
         expect(console.warn).to.have.been.called
         expect(console.warn.args[0][0]).to.equal(msg)
+      })
+    })
+    it('should remove isolated node', function () {
+      var root = new TreeNode({
+        version: '0.0.1',
+        name: 'root',
+        dependencies: { haa: '1.0.0' }
+      })
+      return root.populateChildren()
+      .then(() => {
+        expect(_.size(TreeNode.nodes)).to.equal(4)
+        return root.addDependency('hoo')
+      })
+      .then(() => {
+        expect(_.size(TreeNode.nodes)).to.equal(4)
       })
     })
   })

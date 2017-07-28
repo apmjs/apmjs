@@ -6,15 +6,18 @@ const Version = require('../src/resolver/version.js')
 describe('Version', function () {
   this.timeout(1000)
 
-  describe('.abstract()', function () {
-    it('should return 1.0.x for 1.0.0', function () {
-      expect(Version.abstract('1.0.0')).to.equal('1.0.x')
+  describe('.derive()', function () {
+    it('should return 1.0.x for 1.0.0, 0.0.0', function () {
+      var info = {versions: {'1.0.0': true, '0.0.0': true}}
+      expect(Version.derive(info)).to.equal('1.0.x')
     })
     it('should return 1.2.x for 1.2.38', function () {
-      expect(Version.abstract('1.2.0')).to.equal('1.2.x')
+      var info = {versions: {'1.2.38': true}}
+      expect(Version.derive(info)).to.equal('1.2.x')
     })
     it('should return 1.x for 1.2', function () {
-      expect(Version.abstract('1.2')).to.equal('1.x')
+      var info = {versions: {'1.2': true, '0.0': true}}
+      expect(Version.derive(info)).to.equal('1.x')
     })
   })
   describe('.upgradeWarning()', function () {
