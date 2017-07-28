@@ -75,6 +75,13 @@ describe('TreeNode', function () {
         expect(bar.version).to.equal('1.0.0')
       })
     })
+    it('should respect to the version argument over dependencies declaration', function () {
+      var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.0.0'}})
+      return parent.addDependency('bar', '>=1.0.1').then(bar => {
+        expect(bar.name).to.equal('bar')
+        expect(bar.version).to.equal('1.0.1')
+      })
+    })
     it('should install latest if not listed in the dependencies field', function () {
       var parent = new TreeNode({name: 'parent'})
       return parent.addDependency('bar').then(bar => {

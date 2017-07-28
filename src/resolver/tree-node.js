@@ -25,12 +25,12 @@ TreeNode.packageList = function () {
   return _.map(TreeNode.nodes, node => node.pkg)
 }
 
-TreeNode.prototype.addDependency = function (name) {
+TreeNode.prototype.addDependency = function (name, semver) {
   debug('adding dependency', name)
   return npm
     .getPackageInfo(name, this.pkg)
     .then(info => {
-      var semver = this.dependencies[name] || Version.derive(info)
+      semver = semver || this.dependencies[name] || Version.derive(info)
       var latestPackage = this.latestPackage(info, semver)
       var node = TreeNode.nodes[name]
 
