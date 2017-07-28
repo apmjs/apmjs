@@ -25,7 +25,10 @@ describe('TreeNode', function () {
     return npm.load({registry: 'http://apm'})
   })
   after(() => nock.cleanAll())
-  beforeEach(() => (TreeNode.nodes = {}))
+  beforeEach(() => {
+    TreeNode.nodes = {}
+    TreeNode.referenceCounts = {}
+  })
 
   describe('new TreeNode()', function () {
     it('should create child without error', function () {
@@ -40,22 +43,49 @@ describe('TreeNode', function () {
       expect(gn).to.not.throw()
     })
   })
-  describe('#pickChildPackage', function () {
+  describe('#latestPackage()', function () {
     it('should throw EUNMET if no version available', function () {
       var parent = new TreeNode({name: 'mine'})
       function gn () {
-        return parent.pickChildPackage({name: 'foo'}, '1.0.x')
+        return parent.latestPackage({name: 'foo'}, '1.0.x')
       }
       expect(gn).to.throw('foo@1.0.x not available, required by mine')
     })
   })
-  describe('.create', function () {
-    it('should retrieve info and create', function () {
+  describe('#addDependency()', function () {
+    it('should retrieve info and create a TreeNode', function () {
       var parent = new TreeNode({name: 'parent', dependencies: {'foo': '1.0.x'}})
       return parent.addDependency('foo').then(foo => {
+        expect(_.size(TreeNode.nodes)).to.equal(2)
         expect(foo.name).to.equal('foo')
-        expect(foo.required).to.equal('1.0.x')
-        expect(foo.pkg.version).to.equal('1.0.0')
+        expect(foo.version).to.equal('1.0.0')
+      })
+    })
+    it('should append the TreeNode as child', function () {
+      var parent = new TreeNode({name: 'parent', dependencies: {'foo': '1.0.x'}})
+      return parent.addDependency('foo').then(() => {
+        var parent = TreeNode.nodes.parent
+        expect(parent.children.foo).to.have.property('name', 'foo')
+      })
+    })
+    it('should respect to dependencies field', function () {
+      var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.0.0'}})
+      return parent.addDependency('bar').then(bar => {
+        expect(bar.name).to.equal('bar')
+        expect(bar.version).to.equal('1.0.0')
+      })
+    })
+    it('should install latest if not listed in the dependencies field', function () {
+      var parent = new TreeNode({name: 'parent'})
+      return parent.addDependency('bar').then(bar => {
+        expect(bar.name).to.equal('bar')
+        expect(bar.version).to.equal('1.0.1')
+      })
+    })
+    it('should populate dependencies field if not listed', function () {
+      var parent = new TreeNode({name: 'parent', dependencies: {}})
+      return parent.addDependency('bar').then(() => {
+        expect(parent.dependencies).to.have.property('bar', '1.0.x')
       })
     })
     it('should not throw when creating the same', function () {
@@ -64,24 +94,12 @@ describe('TreeNode', function () {
         expect(parent.addDependency('bar')).to.be.fulfilled
       })
     })
-    it('should not throw when creating the same parallel', function () {
-      var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.x'}})
-      return expect(Promise
-        .all([
-          parent.addDependency('bar'),
-          parent.addDependency('bar')
-        ]))
-        .to.be.fulfilled
-    })
     it('should not create new if already exist', function () {
       expect(_.size(TreeNode.nodes)).to.equal(0)
       var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.x'}})
       expect(_.size(TreeNode.nodes)).to.equal(1)
       return Promise
-        .all([
-          parent.addDependency('bar'),
-          parent.addDependency('bar')
-        ])
+        .each(['bar', 'bar'], id => parent.addDependency(id))
         .then(() => expect(_.size(TreeNode.nodes)).to.equal(2))
     })
     it('should throw when not available', function () {
@@ -163,6 +181,8 @@ describe('TreeNode', function () {
         expect(console.warn.args[0][0]).to.equal(msg)
       })
     })
+  })
+  describe('#addDependency()', function () {
     it('should remove isolated node', function () {
       var root = new TreeNode({
         version: '0.0.1',

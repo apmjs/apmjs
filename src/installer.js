@@ -11,10 +11,10 @@ function Installer (dirname) {
 Installer.prototype.install = function (packages) {
   return Promise
     .map(packages, pkg => pkg.setDirname(this.pathname))
-    .map(pkg => this.installPackageAsNeeded(pkg))
+    .map(pkg => this.installPackageIfNeeded(pkg))
 }
 
-Installer.prototype.installPackageAsNeeded = function (pkg) {
+Installer.prototype.installPackageIfNeeded = function (pkg) {
   return this
     .hasInstalled(pkg)
     .then(exists => {

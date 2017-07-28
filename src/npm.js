@@ -42,8 +42,9 @@ function getPackageInfo (name, parent) {
       throw e
     }
   })
-  .tap(descriptor => {
-    debug('name', descriptor.name, 'versions', Object.keys(descriptor.versions))
+  .tap(desc => {
+    var versionList = Object.keys(desc.versions).join(',')
+    debug('package info retrieved:', `${desc.name}@${versionList}`)
   })
   return infoCache[name]
 }
