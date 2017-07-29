@@ -95,6 +95,12 @@ describe('TreeNode', function () {
         expect(parent.dependencies).to.have.property('bar', '1.0.x')
       })
     })
+    it('should resave dependency', function () {
+      var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.0.0'}})
+      return parent.addDependency('bar', '1.0.x').then(() => {
+        expect(parent.dependencies).to.deep.equal({ 'bar': '1.0.x' })
+      })
+    })
     it('should not throw when creating the same', function () {
       var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.x'}})
       return parent.addDependency('bar').then(() => {
