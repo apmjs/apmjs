@@ -50,7 +50,7 @@ Package.prototype.setPathname = function (pathname) {
   this.descriptorPath = path.resolve(pathname, 'package.json')
 }
 
-Package.prototype.save = function () {
+Package.prototype.saveDependencies = function () {
   var file = this.descriptorPath
   return fs
     .readJson(file)

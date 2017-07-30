@@ -10,21 +10,19 @@ function install (argv, errorHandler, conf) {
   var dependencies = argv
   var save = conf.save
   var installer = new Installer()
-  var pkg
   debug('installing:', dependencies, ', save:', save)
 
   Package.load(process.cwd())
-    .then(currPackage => resolver.loadRoot(pkg = currPackage))
+  .then(pkg => resolver
+    .loadRoot(pkg)
     .then(root => Promise.map(dependencies, dependency => root.addDependency(dependency)))
     .then(() => TreeNode.packageList())
     .then(pkgs => installer.installAll(pkgs))
     .then(() => {
-      if (save) {
-        pkg.save()
-      }
+      if (save) { return pkg.saveDependencies() }
       errorHandler()
-    })
-    .catch(e => errorHandler(e))
+    }))
+  .catch(e => errorHandler(e))
 }
 
 module.exports = install

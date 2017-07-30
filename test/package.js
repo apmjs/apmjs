@@ -1,6 +1,8 @@
 const Package = require('../src/package.js')
+const fs = require('fs-extra')
 const chai = require('chai')
 const expect = chai.expect
+const mock = require('mock-fs')
 chai.use(require('chai-as-promised'))
 
 var foo = {'name': 'foo', 'version': '1.2.3'}
@@ -10,9 +12,13 @@ var coo = {'browser': './a.js', 'index': './b.js', 'name': 'coo'}
 describe('package', function () {
   var pkg
   before(function () {
-    pkg = new Package(foo, '/root')
+    pkg = new Package(foo, '/root/foo')
   })
-  describe('new Package', function () {
+  beforeEach(() => mock({
+    '/root/foo/package.json': '{"author": "harttle", "dependencies": {"foo": "1.2.3"}}'
+  }))
+  afterEach(() => mock.restore())
+  describe('new Package()', function () {
     it('should throw when name not defined', function () {
       expect(function () {
         // eslint-disable-next-line
@@ -23,7 +29,7 @@ describe('package', function () {
       return expect(pkg).to.have.property('name', 'foo')
     })
     it('should resolve index.js by default', function () {
-      return expect(pkg).to.have.property('filepath', '/root/index.js')
+      return expect(pkg).to.have.property('filepath', '/root/foo/index.js')
     })
     it('should save descriptor', function () {
       return expect(pkg).to.include({
@@ -41,12 +47,25 @@ describe('package', function () {
       })
     })
   })
-  describe('#distname', function () {
+  describe('#distname()', function () {
     it('should return name+version string', function () {
       return expect(pkg.distname('/z')).to.equal('/z/foo.js')
     })
     it('should default dirname to ""', function () {
       return expect(pkg.distname('foo.js'))
+    })
+  })
+  describe('#saveDependencies()', function () {
+    it('should save dependencies to file', function () {
+      pkg.dependencies = { 'bar': '2.2.2' }
+      return pkg.saveDependencies()
+        .then(() => fs.readJson('/root/foo/package.json'))
+        .then(json => expect(json).to.deep.equal({
+          author: 'harttle',
+          dependencies: {
+            bar: '2.2.2'
+          }
+        }))
     })
   })
 })

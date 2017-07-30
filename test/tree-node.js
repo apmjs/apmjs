@@ -101,6 +101,14 @@ describe('TreeNode', function () {
         expect(parent.dependencies).to.deep.equal({ 'bar': '1.0.x' })
       })
     })
+    it("should update internal package's dependency", function () {
+      var pkg = {name: 'parent', dependencies: {'bar': '1.0.0'}}
+      var parent = new TreeNode(pkg)
+      return parent.addDependency('bar', '1.0.x').then(() => {
+        console.log(pkg)
+        expect(pkg.dependencies).to.deep.equal({ 'bar': '1.0.x' })
+      })
+    })
     it('should not throw when creating the same', function () {
       var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.x'}})
       return parent.addDependency('bar').then(() => {
