@@ -1,5 +1,6 @@
 const fs = require('fs-extra')
 const path = require('path')
+const debug = require('debug')('apmjs:test:npm')
 const npm = require('../src/npm.js')
 const chai = require('chai')
 const expect = chai.expect
@@ -13,7 +14,7 @@ describe('npm', function () {
 
   before(() => {
     nock('http://apm')
-      .log(console.log)
+      .log(debug)
       .get('/foo')
       .reply(200, JSON.stringify(fooInfo))
       .get('/xxx')

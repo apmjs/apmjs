@@ -15,13 +15,15 @@ function install (argv, errorHandler, conf) {
   Package.load(process.cwd())
   .then(pkg => resolver
     .loadRoot(pkg)
-    .then(root => Promise.map(dependencies, dependency => root.addDependency(dependency)))
+    .then(root => Promise.map(
+      dependencies,
+      dependency => root.addDependency(dependency))
+    )
     .then(() => TreeNode.packageList())
     .then(pkgs => installer.install(pkgs))
-    .then(() => {
-      if (save) { return pkg.saveDependencies() }
-      errorHandler()
-    }))
+    .then(() => save ? pkg.saveDependencies() : '')
+  )
+  .then(() => errorHandler())
   .catch(e => errorHandler(e))
 }
 

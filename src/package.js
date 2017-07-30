@@ -11,7 +11,7 @@ function Package (descriptor, pathname) {
 
   this.version = descriptor.version || '0.0.0'
   this.name = changeCase.camelCase(descriptor.name)
-  this.dependencies = descriptor.dependencies
+  this.dependencies = descriptor.dependencies || {}
   this.descriptor = descriptor
   if (pathname) {
     this.setPathname(pathname)
@@ -21,7 +21,9 @@ function Package (descriptor, pathname) {
 Package.load = function (pathname) {
   return Promise
     .resolve(path.resolve(pathname, 'package.json'))
+    .tap(file => debug('loading package from', file))
     .then(filepath => fs.readJson(filepath))
+    .tap(json => debug('package descriptor loaded', json))
     .then(descriptor => new Package(descriptor, pathname))
 }
 
@@ -48,6 +50,7 @@ Package.prototype.setPathname = function (pathname) {
   var filepath = descriptor.browser || descriptor.index || 'index.js'
   this.filepath = path.resolve(pathname, filepath)
   this.descriptorPath = path.resolve(pathname, 'package.json')
+  return this
 }
 
 Package.prototype.saveDependencies = function () {
@@ -56,6 +59,7 @@ Package.prototype.saveDependencies = function () {
     .readJson(file)
     .then(pkg => {
       pkg.dependencies = this.dependencies
+      console.log('writing json to ', file, 'json', pkg)
       return fs.writeJson(file, pkg)
     })
 }

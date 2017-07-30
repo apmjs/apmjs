@@ -1,4 +1,5 @@
 const process = require('process')
+const Promise = require('bluebird')
 const Package = require('./package')
 const npm = require('./npm.js')
 const path = require('path')

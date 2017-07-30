@@ -31,15 +31,8 @@ describe('TreeNode', function () {
   })
 
   describe('new TreeNode()', function () {
-    it('should create child without error', function () {
-      var versions = {'1.0.0': {name: 'foo'}}
-      var parent = new TreeNode({name: 'mine', dependencies: {'foo': '1.0.x'}})
-      function fn () { return new TreeNode('foo', versions, parent) }
-      expect(fn).to.not.throw()
-    })
     it('should create root without error', function () {
-      var versions = {'1.0.0': {name: 'foo'}}
-      function gn () { return new TreeNode('foo', versions) }
+      function gn () { return new TreeNode({name: 'foo'}) }
       expect(gn).to.not.throw()
     })
   })
@@ -105,7 +98,6 @@ describe('TreeNode', function () {
       var pkg = {name: 'parent', dependencies: {'bar': '1.0.0'}}
       var parent = new TreeNode(pkg)
       return parent.addDependency('bar', '1.0.x').then(() => {
-        console.log(pkg)
         expect(pkg.dependencies).to.deep.equal({ 'bar': '1.0.x' })
       })
     })

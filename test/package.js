@@ -28,6 +28,10 @@ describe('package', function () {
     it('should resolve name field', function () {
       return expect(pkg).to.have.property('name', 'foo')
     })
+    it('should set default dependencies', function () {
+      var emptyPkg = new Package({name: 'foo'})
+      return expect(emptyPkg.dependencies).to.be.an('object')
+    })
     it('should resolve index.js by default', function () {
       return expect(pkg).to.have.property('filepath', '/root/foo/index.js')
     })

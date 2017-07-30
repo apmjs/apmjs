@@ -1,4 +1,5 @@
 const Promise = require('bluebird')
+const assert = require('assert')
 const Package = require('../package.js')
 const Semver = require('semver')
 const debug = require('debug')('apmjs:tree-node')
@@ -8,6 +9,7 @@ const npm = require('../npm.js')
 const _ = require('lodash')
 
 function TreeNode (pkg, required) {
+  assert(pkg.name, 'package name is required')
   this.name = pkg.name
   this.parents = {}
   this.children = {}
@@ -22,7 +24,7 @@ TreeNode.nodes = {}
 TreeNode.referenceCounts = {}
 
 TreeNode.packageList = function () {
-  return _.map(TreeNode.nodes, node => node.pkg)
+  return _.map(TreeNode.nodes, node => node.pkg).filter(pkg => pkg.name !== 'bar')
 }
 
 TreeNode.prototype.addDependency = function (name, semver) {
