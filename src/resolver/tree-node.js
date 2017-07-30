@@ -85,7 +85,9 @@ TreeNode.prototype.checkComformance = function (pkg, semver, parent) {
 TreeNode.prototype.populateChildren = function () {
   var dependencies = _.keys(this.dependencies)
   debug(`populating children ${dependencies} for ${this}`)
-  return Promise.each(dependencies, name => this.addDependency(name))
+  return Promise
+    .each(dependencies, name => this.addDependency(name))
+    .then(() => this)
 }
 
 TreeNode.prototype.latestPackage = function (info, semver) {
@@ -119,6 +121,7 @@ TreeNode.prototype.appendChild = function (child, semver) {
   child.parents[this.name] = this
   child.referenceCount++
   this.children[child.name] = child
+  return this
 }
 
 TreeNode.prototype.remove = function (parent) {

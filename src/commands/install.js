@@ -17,7 +17,7 @@ function install (argv, errorHandler, conf) {
     .loadRoot(pkg)
     .then(root => Promise.map(dependencies, dependency => root.addDependency(dependency)))
     .then(() => TreeNode.packageList())
-    .then(pkgs => installer.installAll(pkgs))
+    .then(pkgs => installer.install(pkgs))
     .then(() => {
       if (save) { return pkg.saveDependencies() }
       errorHandler()
