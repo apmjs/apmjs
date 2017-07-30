@@ -1,4 +1,5 @@
 const Semver = require('semver')
+const error = require('../error.js')
 const _ = require('lodash')
 
 function maxSatisfying (versionMap, semver) {
@@ -16,6 +17,17 @@ function upgradeWarning (name, lhs, rhs) {
   console.warn(msg)
 }
 
+function parsePackageName (decl) {
+  var match = /^([\w-.]+)(@.*)?$/.exec(decl)
+  if (!match) {
+    throw new error.InvalidPackageName(decl)
+  }
+  return {
+    name: match[1],
+    semver: match[2] && match[2].slice(1)
+  }
+}
+
 function derive (info) {
   var lastVersion = _.chain(info.versions).keys().sort().last().value()
   if (!lastVersion) {
@@ -27,5 +39,5 @@ function derive (info) {
 }
 
 module.exports = {
-  upgradeWarning, maxSatisfying, derive
+  upgradeWarning, maxSatisfying, derive, parsePackageName
 }

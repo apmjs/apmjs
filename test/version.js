@@ -1,4 +1,5 @@
 const chai = require('chai')
+const error = require('../src/error.js')
 const expect = chai.expect
 const debug = require('debug')('apmjs:test:version')
 const Version = require('../src/resolver/version.js')
@@ -18,6 +19,20 @@ describe('Version', function () {
     it('should return 1.x for 1.2', function () {
       var info = {versions: {'1.2': true, '0.0': true}}
       expect(Version.derive(info)).to.equal('1.x')
+    })
+  })
+  describe('.parsePackagName()', function () {
+    it('should parse both name and semver components', function () {
+      expect(Version.parsePackageName('foo@>=1.1.0')).to.deep.equal({
+        name: 'foo',
+        semver: '>=1.1.0'
+      })
+    })
+    it('should throw for invalid package name', function () {
+      function fn () {
+        Version.parsePackageName('>=2.2')
+      }
+      expect(fn).to.throw(error.InvalidPackageName, /invalid package name/)
     })
   })
   describe('.upgradeWarning()', function () {

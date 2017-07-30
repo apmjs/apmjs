@@ -5,6 +5,7 @@ function PackageNotFound (name, parent) {
   this.name = this.constructor.name
   this.message = `package ${name} not found, required by ${parent.name}`
   this.pkgname = name
+  this.code = 'ENOTFOUND'
   this.parent = parent
 }
 util.inherits(PackageNotFound, Error)
@@ -17,4 +18,12 @@ function UnmetDependency (message) {
 }
 util.inherits(UnmetDependency, Error)
 
-module.exports = {PackageNotFound, UnmetDependency}
+function InvalidPackageName (packageName) {
+  Error.captureStackTrace(this, this.constructor)
+  this.name = this.constructor.name
+  this.code = 'EPKGNAME'
+  this.message = `invalid package name "${packageName}"`
+}
+util.inherits(InvalidPackageName, Error)
+
+module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName}
