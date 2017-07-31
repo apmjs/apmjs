@@ -3,6 +3,7 @@ const expect = chai.expect
 const mock = require('mock-fs')
 const Installer = require('../src/installer.js')
 const npm = require('../src/npm.js')
+const fs = require('fs-extra')
 const sinon = require('sinon')
 const Package = require('../src/package.js')
 const _ = require('lodash')
@@ -30,7 +31,7 @@ describe('Installer', function () {
     npm.downloadPackage.restore()
     mock.restore()
   })
-  describe('#installPackage', function () {
+  describe('#installPackage()', function () {
     it('should install foo to /root/amd_modules/foo', function () {
       inst.installPackage(foo)
       expect(npm.downloadPackage).to.have.been.calledWith(
@@ -39,7 +40,20 @@ describe('Installer', function () {
       )
     })
   })
-  describe('#hasInstalled', function () {
+  describe('#saveMeta()', function () {
+    it('should generate index.json', function () {
+      var map = [{
+        name: 'foo',
+        version: '2.2.2',
+        filepath: 'foo/a.js',
+        fullpath: '/root/foo/a.js'
+      }]
+      return inst.saveMeta(map)
+        .then(() => fs.readJson('/root/amd_modules/index.json'))
+        .then(index => expect(index).to.deep.equal(map))
+    })
+  })
+  describe('#hasInstalled()', function () {
     it('should resolve as false if not installed', function () {
       return expect(inst.hasInstalled(foo)).to.eventually.equal(false)
     })

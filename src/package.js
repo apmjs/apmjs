@@ -47,8 +47,9 @@ Package.prototype.equalTo = function (another) {
 
 Package.prototype.setPathname = function (pathname) {
   var descriptor = this.descriptor
-  var filepath = descriptor.browser || descriptor.index || 'index.js'
-  this.filepath = path.resolve(pathname, filepath)
+  var index = descriptor.browser || descriptor.index || 'index.js'
+  this.filepath = path.join(path.basename(pathname), index)
+  this.fullpath = path.resolve(pathname, index)
   this.descriptorPath = path.resolve(pathname, 'package.json')
   return this
 }

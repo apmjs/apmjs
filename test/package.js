@@ -33,7 +33,7 @@ describe('package', function () {
       return expect(emptyPkg.dependencies).to.be.an('object')
     })
     it('should resolve index.js by default', function () {
-      return expect(pkg).to.have.property('filepath', '/root/foo/index.js')
+      return expect(pkg).to.have.property('fullpath', '/root/foo/index.js')
     })
     it('should save descriptor', function () {
       return expect(pkg).to.include({
@@ -42,12 +42,14 @@ describe('package', function () {
     })
     it('should respect package.json/index field', function () {
       return expect(new Package(bar, '/bar')).to.include({
-        filepath: '/bar/a.js'
+        fullpath: '/bar/a.js',
+        filepath: 'bar/a.js'
       })
     })
     it('should take browser field over index field', function () {
-      return expect(new Package(coo, '/coo')).to.include({
-        filepath: '/coo/a.js'
+      return expect(new Package(coo, '/coo/haa')).to.include({
+        fullpath: '/coo/haa/a.js',
+        filepath: 'haa/a.js'
       })
     })
   })

@@ -1,5 +1,7 @@
 const process = require('process')
+const _ = require('lodash')
 const Promise = require('bluebird')
+const fs = require('fs-extra')
 const Package = require('./package')
 const npm = require('./npm.js')
 const path = require('path')
@@ -13,6 +15,14 @@ Installer.prototype.install = function (packages) {
   return Promise
     .map(packages, pkg => pkg.setDirname(this.pathname))
     .map(pkg => this.installPackageIfNeeded(pkg))
+    .then(() => this.saveMeta(packages))
+}
+
+Installer.prototype.saveMeta = function (pkgs) {
+  var fields = ['name', 'version', 'filepath', 'fullpath']
+  var meta = pkgs.map(pkg => _.pick(pkg, fields))
+  var file = path.resolve(this.pathname, 'index.json')
+  return fs.writeJson(file, meta, {spaces: 2})
 }
 
 Installer.prototype.installPackageIfNeeded = function (pkg) {
