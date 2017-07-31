@@ -1,6 +1,6 @@
 {
   "name": "apmjs",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "AMD package manager",
   "main": "index.js",
   "bin": {
