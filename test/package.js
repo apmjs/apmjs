@@ -6,8 +6,8 @@ const mock = require('mock-fs')
 chai.use(require('chai-as-promised'))
 
 var foo = {'name': 'foo', 'version': '1.2.3'}
-var bar = {'index': './a.js', 'name': 'bar'}
-var coo = {'browser': './a.js', 'index': './b.js', 'name': 'coo'}
+var bar = {'main': './a.js', 'name': 'bar'}
+var coo = {'browser': './a.js', 'main': './b.js', 'name': 'coo'}
 
 describe('package', function () {
   var pkg
@@ -40,13 +40,13 @@ describe('package', function () {
         'descriptor': foo
       })
     })
-    it('should respect package.json/index field', function () {
+    it('should respect package.json/main field', function () {
       return expect(new Package(bar, '/bar')).to.include({
         fullpath: '/bar/a.js',
         filepath: 'bar/a.js'
       })
     })
-    it('should take browser field over index field', function () {
+    it('should take browser field over main field', function () {
       return expect(new Package(coo, '/coo/haa')).to.include({
         fullpath: '/coo/haa/a.js',
         filepath: 'haa/a.js'

@@ -48,7 +48,6 @@
     "request": "^2.81.0",
     "request-promise": "^4.2.1",
     "semver": "^5.3.0",
-    "shopify-liquid": "^1.9.0",
     "tarball-extract": "0.0.6"
   }
 }
