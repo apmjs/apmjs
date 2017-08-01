@@ -24,7 +24,8 @@ TreeNode.nodes = {}
 TreeNode.referenceCounts = {}
 
 TreeNode.packageList = function () {
-  return _.map(TreeNode.nodes, node => node.pkg).filter(pkg => pkg.name !== 'bar')
+  var notRoot = pkg => pkg.required !== 'ROOT'
+  return _.filter(TreeNode.nodes, notRoot).map(node => node.pkg)
 }
 
 TreeNode.prototype.addDependency = function (name, semver) {

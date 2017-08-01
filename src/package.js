@@ -10,7 +10,7 @@ function Package (descriptor, pathname) {
   assert(descriptor.name, 'package name not defined for ' + pathname)
 
   this.version = descriptor.version || '0.0.0'
-  this.name = changeCase.camelCase(descriptor.name)
+  this.name = descriptor.name
   this.dependencies = descriptor.dependencies || {}
   this.descriptor = descriptor
   if (pathname) {
@@ -60,7 +60,6 @@ Package.prototype.saveDependencies = function () {
     .readJson(file)
     .then(pkg => {
       pkg.dependencies = this.dependencies
-      console.log('writing json to ', file, 'json', pkg)
       return fs.writeJson(file, pkg)
     })
 }
