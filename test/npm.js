@@ -17,6 +17,8 @@ describe('npm', function () {
       .log(debug)
       .get('/foo')
       .reply(200, JSON.stringify(fooInfo))
+      .get('/%40baidu%2Ffoo')
+      .reply(200, JSON.stringify(fooInfo))
       .get('/xxx')
       .reply(404, 'Not Found')
       .get('/foo/-/foo-1.0.0.tgz')
@@ -38,6 +40,12 @@ describe('npm', function () {
               tarball: 'http://apm/foo/-/foo-1.0.0.tgz'
             }
           })
+        })
+    })
+    it('should encode package name', function () {
+      return npm.getPackageInfo('@baidu/foo')
+        .then(info => {
+          expect(info).to.have.property('name', 'foo')
         })
     })
     it('should throw on non-exist package', function () {

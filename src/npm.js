@@ -31,7 +31,7 @@ function getPackageInfo (name, parent) {
     return infoCache[name]
   }
   infoCache[name] = rp({
-    url: url.resolve(config.registry, name),
+    url: url.resolve(config.registry, encodeURIComponent(name)),
     json: true
   })
   .promise()

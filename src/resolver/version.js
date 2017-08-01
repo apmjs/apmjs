@@ -18,7 +18,7 @@ function upgradeWarning (name, lhs, rhs) {
 }
 
 function parsePackageName (decl) {
-  var match = /^([\w-.]+)(@.*)?$/.exec(decl)
+  var match = /^((?:[@\w-]+\/)?[\w-.]+)(@.*)?$/.exec(decl)
   if (!match) {
     throw new error.InvalidPackageName(decl)
   }

@@ -28,6 +28,12 @@ describe('Version', function () {
         semver: '>=1.1.0'
       })
     })
+    it('should parse scoped name', function () {
+      expect(Version.parsePackageName('@baidu/foo@>=1.1.0')).to.deep.equal({
+        name: '@baidu/foo',
+        semver: '>=1.1.0'
+      })
+    })
     it('should throw for invalid package name', function () {
       function fn () {
         Version.parsePackageName('>=2.2')
