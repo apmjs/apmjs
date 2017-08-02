@@ -3,9 +3,9 @@ const assert = require('assert')
 const Package = require('../package.js')
 const Semver = require('semver')
 const debug = require('debug')('apmjs:tree-node')
-const error = require('../error.js')
+const error = require('../utils/error.js')
 const Version = require('./version.js')
-const npm = require('../npm.js')
+const npm = require('../utils/npm.js')
 const _ = require('lodash')
 
 function TreeNode (pkg, required) {

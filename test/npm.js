@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 const path = require('path')
 const debug = require('debug')('apmjs:test:npm')
-const npm = require('../src/npm.js')
+const npm = require('../src/utils/npm.js')
 const chai = require('chai')
 const expect = chai.expect
 const nock = require('nock')
@@ -17,7 +17,7 @@ describe('npm', function () {
       .log(debug)
       .get('/foo')
       .reply(200, JSON.stringify(fooInfo))
-      .get('/%40baidu%2Ffoo')
+      .get('/@baidu%2Ffoo')
       .reply(200, JSON.stringify(fooInfo))
       .get('/xxx')
       .reply(404, 'Not Found')

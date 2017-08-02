@@ -4,7 +4,4 @@
 [![Build Status](https://travis-ci.org/jetwg/apmjs.svg?branch=master)](https://travis-ci.org/jetwg/apmjs)
 [![Coveralls](https://img.shields.io/coveralls/jetwg/apmjs.svg)](https://coveralls.io/github/jetwg/apmjs?branch=master)
 
-APM is a package manager for AMD.
-
-* APM Philosophy: <https://github.com/jetwg/apmjs/wiki/APM-Philosophy>
-* Roadmap: <https://github.com/jetwg/apmjs/wiki/Roadmap>
+APM (AMD Package Manager) is a npm-based package manager for AMD. For more details, see: https://github.com/jetwg/apmjs/wiki

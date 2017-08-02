@@ -1,5 +1,5 @@
 const chai = require('chai')
-const error = require('../src/error.js')
+const error = require('../src/utils/error.js')
 const expect = chai.expect
 const debug = require('debug')('apmjs:test:version')
 const Version = require('../src/resolver/version.js')

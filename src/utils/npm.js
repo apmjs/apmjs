@@ -1,4 +1,4 @@
-const url = require('url')
+const registry = require('../registry.js')
 const error = require('./error.js')
 const rp = require('request-promise')
 const Promise = require('bluebird')
@@ -8,8 +8,6 @@ const npm = require('npm')
 const fs = require('fs-extra')
 const tarball = require('tarball-extract')
 const _ = require('lodash')
-
-var config = {registry: 'http://apmjs.baidu.com'}
 
 function downloadPackage (url, dir) {
   var name = path.basename(url)
@@ -30,8 +28,10 @@ function getPackageInfo (name, parent) {
   if (infoCache[name]) {
     return infoCache[name]
   }
+  var infoUrl = registry.packageUrl(name)
+  debug('retrieving package info from', infoUrl)
   infoCache[name] = rp({
-    url: url.resolve(config.registry, encodeURIComponent(name)),
+    url: infoUrl,
     json: true
   })
   .promise()
@@ -50,6 +50,7 @@ function getPackageInfo (name, parent) {
 }
 
 function load (conf) {
+  var config = {}
   _.assign(config, conf)
   return Promise.fromCallback(cb => npm.load(config, cb))
 }

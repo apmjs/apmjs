@@ -1,9 +1,10 @@
 const process = require('process')
+const debug = require('debug')('apmjs:installer')
 const _ = require('lodash')
 const Promise = require('bluebird')
 const fs = require('fs-extra')
 const Package = require('./package')
-const npm = require('./npm.js')
+const npm = require('./utils/npm.js')
 const path = require('path')
 
 function Installer (dirname) {
@@ -15,13 +16,14 @@ Installer.prototype.install = function (packages) {
   return Promise
     .map(packages, pkg => pkg.setDirname(this.pathname))
     .map(pkg => this.installPackageIfNeeded(pkg))
-    .then(() => this.saveMeta(packages))
+    .then(() => this.saveMapping(packages))
 }
 
-Installer.prototype.saveMeta = function (pkgs) {
+Installer.prototype.saveMapping = function (pkgs) {
   var fields = ['name', 'version', 'filepath', 'fullpath']
   var meta = pkgs.map(pkg => _.pick(pkg, fields))
   var file = path.resolve(this.pathname, 'index.json')
+  debug('writing dependency mapping to', file)
   return fs.writeJson(file, meta, {spaces: 2})
 }
 

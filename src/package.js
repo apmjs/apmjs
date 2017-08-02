@@ -23,7 +23,6 @@ Package.load = function (pathname) {
     .resolve(path.resolve(pathname, 'package.json'))
     .tap(file => debug('loading package from', file))
     .then(filepath => fs.readJson(filepath))
-    .tap(json => debug('package descriptor loaded', json))
     .then(descriptor => new Package(descriptor, pathname))
 }
 
@@ -56,11 +55,12 @@ Package.prototype.setPathname = function (pathname) {
 
 Package.prototype.saveDependencies = function () {
   var file = this.descriptorPath
+  debug('saving dependencies to', file)
   return fs
     .readJson(file)
     .then(pkg => {
       pkg.dependencies = this.dependencies
-      return fs.writeJson(file, pkg)
+      return fs.writeJson(file, pkg, {spaces: 2})
     })
 }
 

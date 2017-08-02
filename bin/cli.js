@@ -75,7 +75,7 @@
   // this is how to use npm programmatically:
   conf._exit = true
   // TODO: support configuration, be conformant to NPM
-  conf.registry = 'http://apmjs.baidu.com'
+  // conf.registry = 'http://apmjs.baidu.com'
   npm.load(conf, function (er) {
     if (er) return errorHandler(er)
     npm.commands[npm.command](npm.argv, errorHandler, conf)

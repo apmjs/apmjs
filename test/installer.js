@@ -2,7 +2,7 @@ const chai = require('chai')
 const expect = chai.expect
 const mock = require('mock-fs')
 const Installer = require('../src/installer.js')
-const npm = require('../src/npm.js')
+const npm = require('../src/utils/npm.js')
 const fs = require('fs-extra')
 const sinon = require('sinon')
 const Package = require('../src/package.js')
@@ -40,7 +40,7 @@ describe('Installer', function () {
       )
     })
   })
-  describe('#saveMeta()', function () {
+  describe('#saveMapping()', function () {
     it('should generate index.json', function () {
       var map = [{
         name: 'foo',
@@ -48,9 +48,10 @@ describe('Installer', function () {
         filepath: 'foo/a.js',
         fullpath: '/root/foo/a.js'
       }]
-      return inst.saveMeta(map)
-        .then(() => fs.readJson('/root/amd_modules/index.json'))
-        .then(index => expect(index).to.deep.equal(map))
+      var str = JSON.stringify(map, null, 2) + '\n'
+      return inst.saveMapping(map)
+        .then(() => fs.readFile('/root/amd_modules/index.json', {encoding: 'utf8'}))
+        .then(index => expect(index).to.deep.equal(str))
     })
   })
   describe('#hasInstalled()', function () {

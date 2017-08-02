@@ -1,5 +1,5 @@
 const Semver = require('semver')
-const error = require('../error.js')
+const error = require('../utils/error.js')
 const _ = require('lodash')
 
 function maxSatisfying (versionMap, semver) {
