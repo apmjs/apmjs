@@ -24,6 +24,12 @@ Package.load = function (pathname) {
     .tap(file => debug('loading package from', file))
     .then(filepath => fs.readJson(filepath))
     .then(descriptor => new Package(descriptor, pathname))
+    .catch(e => {
+      if (e.code === 'ENOENT') {
+        return new Package({name: 'tmp'})
+      }
+      throw e
+    })
 }
 
 Package.prototype.toString = function () {
@@ -55,6 +61,11 @@ Package.prototype.setPathname = function (pathname) {
 
 Package.prototype.saveDependencies = function () {
   var file = this.descriptorPath
+  if (!file) {
+    console.warn('package.json not exist, skip saving...')
+    return Promise.resolve()
+  }
+
   debug('saving dependencies to', file)
   return fs
     .readJson(file)

@@ -2,6 +2,7 @@ const Package = require('../src/package.js')
 const fs = require('fs-extra')
 const chai = require('chai')
 const expect = chai.expect
+const sinon = require('sinon')
 const mock = require('mock-fs')
 chai.use(require('chai-as-promised'))
 
@@ -11,13 +12,27 @@ var coo = {'browser': './a.js', 'main': './b.js', 'name': 'coo'}
 
 describe('package', function () {
   var pkg
+  var tmpPkg
   before(function () {
     pkg = new Package(foo, '/root/foo')
+    tmpPkg = new Package({name: 'tmp'})
   })
   beforeEach(() => mock({
-    '/root/foo/package.json': '{"author": "harttle", "dependencies": {"foo": "1.2.3"}}'
+    '/root/foo/package.json': '{"name": "foo", "author": "harttle", "dependencies": {"foo": "1.2.3"}}'
   }))
   afterEach(() => mock.restore())
+  describe('.load()', function () {
+    it('should load package', function () {
+      return Package.load('/root/foo').then(pkg => {
+        expect(pkg).to.have.property('name', 'foo')
+      })
+    })
+    it('should load empty package.json without exception', function () {
+      return Package.load('/root/bar').then(pkg => {
+        expect(pkg).to.have.property('name', 'tmp')
+      })
+    })
+  })
   describe('new Package()', function () {
     it('should throw when name not defined', function () {
       expect(function () {
@@ -62,11 +77,19 @@ describe('package', function () {
     })
   })
   describe('#saveDependencies()', function () {
+    beforeEach(() => sinon.stub(console, 'warn'))
+    afterEach(() => console.warn.restore())
+    it('should skip saving when package.json not exist', function () {
+      return tmpPkg.saveDependencies().then(() => {
+        expect(console.warn).to.be.calledWith('package.json not exist, skip saving...')
+      })
+    })
     it('should save dependencies to file', function () {
       pkg.dependencies = { 'bar': '2.2.2' }
       return pkg.saveDependencies()
         .then(() => fs.readJson('/root/foo/package.json'))
         .then(json => expect(json).to.deep.equal({
+          name: 'foo',
           author: 'harttle',
           dependencies: {
             bar: '2.2.2'
