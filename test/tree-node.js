@@ -160,9 +160,11 @@ describe('TreeNode', function () {
   describe('dependency trees', function () {
     beforeEach(function () {
       this.sinon.stub(console, 'warn')
+      this.sinon.stub(console, 'log')
     })
     afterEach(function () {
       console.warn.restore()
+      console.log.restore()
     })
     it('should install latest available', function () {
       var root = new TreeNode({
@@ -183,6 +185,23 @@ describe('TreeNode', function () {
       return root.populateChildren().then(() => {
         expect(_.size(TreeNode.nodes)).to.equal(3)
         expect(TreeNode.nodes.baz).to.have.property('version', '1.0.1')
+      })
+    })
+    it('should print dependency tree', function () {
+      var root = new TreeNode({
+        name: 'root',
+        version: '1.0.0',
+        dependencies: { foo: '1.0.0', baz: '1.0.x' }
+      })
+      return root.populateChildren().then(() => {
+        root.printTree()
+        var tree = [
+          'root@1.0.0',
+          '├── foo@1.0.0',
+          '└── baz@1.0.1'
+        ].join('\n')
+        expect(console.log).to.have.been.calledOnce
+        expect(console.log.args[0][0]).to.equal(tree)
       })
     })
     it('should warn to upgrade former packages', function () {

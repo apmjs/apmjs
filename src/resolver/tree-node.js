@@ -1,5 +1,6 @@
 const Promise = require('bluebird')
 const assert = require('assert')
+const treePrinter = require('tree-printer')
 const Package = require('../package.js')
 const Semver = require('semver')
 const debug = require('debug')('apmjs:tree-node')
@@ -26,6 +27,24 @@ TreeNode.referenceCounts = {}
 TreeNode.packageList = function () {
   var notRoot = pkg => pkg.required !== 'ROOT'
   return _.filter(TreeNode.nodes, notRoot).map(node => node.pkg)
+}
+
+TreeNode.prototype.toPlainTree = function () {
+  var obj = {
+    name: this.toString(),
+    children: _.map(this.children, child => child.toPlainTree())
+  }
+  return obj
+}
+
+TreeNode.prototype.printTree = function () {
+  var tree = this.toPlainTree()
+  var str = this.toString()
+  var children = treePrinter(tree.children, {format: {root: ''}}).trim()
+  if (children) {
+    str += '\n' + children
+  }
+  console.log(str)
 }
 
 TreeNode.prototype.addDependency = function (name, semver) {

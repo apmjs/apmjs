@@ -24,7 +24,7 @@ Installer.prototype.saveMapping = function (pkgs) {
   var meta = pkgs.map(pkg => _.pick(pkg, fields))
   var file = path.resolve(this.pathname, 'index.json')
   debug('writing dependency mapping to', file)
-  return fs.writeJson(file, meta, {spaces: 2})
+  return fs.ensureDir(this.pathname).then(() => fs.writeJson(file, meta, {spaces: 2}))
 }
 
 Installer.prototype.installPackageIfNeeded = function (pkg) {
