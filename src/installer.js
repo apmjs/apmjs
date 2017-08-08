@@ -39,7 +39,9 @@ Installer.prototype.installPackageIfNeeded = function (pkg) {
 Installer.prototype.installPackage = function (pkg) {
   var url = pkg.descriptor.dist.tarball
   var dir = path.resolve(this.pathname, pkg.name)
-  return npm.downloadPackage(url, dir)
+  return npm
+    .downloadPackage(url, dir)
+    .then(() => pkg.postInstall())
 }
 
 Installer.prototype.hasInstalled = function (pkg) {

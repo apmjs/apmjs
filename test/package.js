@@ -9,6 +9,7 @@ chai.use(require('chai-as-promised'))
 var foo = {'name': 'foo', 'version': '1.2.3'}
 var bar = {'main': './a.js', 'name': 'bar'}
 var coo = {'browser': './a.js', 'main': './b.js', 'name': 'coo'}
+var hoo = {'browser': {'./foo.js': 'bar/b.js', 'coo.js': false}, 'main': './b.js', 'name': 'hoo'}
 var scoped = {'name': '@baidu/haa'}
 
 describe('package', function () {
@@ -19,6 +20,8 @@ describe('package', function () {
     tmpPkg = new Package({name: 'tmp'})
   })
   beforeEach(() => mock({
+    '/root/hoo/foo.js': 'FOO',
+    '/root/hoo/bar/b.js': 'BAR',
     '/root/foo/package.json': '{"name": "foo", "author": "harttle", "dependencies": {"foo": "1.2.3"}}'
   }))
   afterEach(() => mock.restore())
@@ -75,6 +78,25 @@ describe('package', function () {
       })
     })
   })
+  describe('#setDirname()', function () {
+    var tmp
+    before(function () {
+      tmp = new Package(foo)
+      tmp.setDirname('/root/hoo')
+    })
+    it('should derive this.pathname', function () {
+      expect(tmp.pathname).to.equal('/root/hoo/foo')
+    })
+    it('should derive this.filepath', function () {
+      expect(tmp.filepath).to.equal('foo/index.js')
+    })
+    it('should derive this.fullpath', function () {
+      expect(tmp.fullpath).to.equal('/root/hoo/foo/index.js')
+    })
+    it('should derive this.descriptorPath', function () {
+      expect(tmp.descriptorPath).to.equal('/root/hoo/foo/package.json')
+    })
+  })
   describe('#distname()', function () {
     it('should return name+version string', function () {
       return expect(pkg.distname('/z')).to.equal('/z/foo.js')
@@ -102,6 +124,32 @@ describe('package', function () {
             bar: '2.2.2'
           }
         }))
+    })
+  })
+  describe('#postInstall()', function () {
+    var pkgHoo
+    beforeEach(() => {
+      pkgHoo = new Package(hoo)
+    })
+    it('should reject if setDirname not called yet', function () {
+      return expect(pkgHoo.postInstall())
+        .to.eventually.rejectedWith(/setDirname first/)
+    })
+    it('should mv files as specified by browser field', function () {
+      pkgHoo.setDirname('/root')
+      return pkgHoo
+        .postInstall()
+        .then(() => fs.pathExists('/root/hoo/bar/b.js'))
+        .then(ret => expect(ret).to.be.false)
+        .then(() => fs.readFile('/root/hoo/foo.js', {encoding: 'utf8'}))
+        .then(ret => expect(ret).to.equal('BAR'))
+    })
+    it('should clear module when set false', function () {
+      pkgHoo.setDirname('/root')
+      return pkgHoo
+        .postInstall()
+        .then(() => fs.readFile('/root/hoo/coo.js', {encoding: 'utf8'}))
+        .then(ret => expect(ret).to.equal('define(function(){})'))
     })
   })
 })

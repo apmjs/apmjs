@@ -33,6 +33,27 @@ Package.load = function (pathname) {
     })
 }
 
+Package.prototype.postInstall = function () {
+  var browser = this.descriptor.browser
+  if (!this.pathname) {
+    return Promise.reject(new Error('cannot run post-install, setDirname first'))
+  }
+  if (!_.isObject(browser)) {
+    return
+  }
+  var ps = _.map(browser, (replacer, target) => {
+    var targetPath = path.resolve(this.pathname, target)
+    if (replacer === false) {
+      return fs.writeFile(targetPath, 'define(function(){})')
+    }
+    var replacerPath = path.resolve(this.pathname, replacer)
+    return fs.move(replacerPath, targetPath, {overwrite: true}).catch(e => {
+      console.warn(`failed to mv ${replacer} to ${target}: ${e.message}`)
+    })
+  })
+  return Promise.all(ps)
+}
+
 Package.prototype.toString = function () {
   return this.name + '@' + this.version
 }
@@ -59,6 +80,7 @@ Package.prototype.setPathname = function (pathname) {
   var index = browser || descriptor.main || 'index.js'
   this.filepath = path.join(this.name, index)
   this.fullpath = path.resolve(pathname, index)
+  this.pathname = pathname
   this.descriptorPath = path.resolve(pathname, 'package.json')
   return this
 }

@@ -21,7 +21,7 @@ describe('Installer', function () {
 
   beforeEach(function () {
     inst = new Installer('/root')
-    sinon.stub(npm, 'downloadPackage')
+    sinon.stub(npm, 'downloadPackage').returns(Promise.resolve())
     mock({'/root': { 'amd_modules': {
       'bar': {'package.json': JSON.stringify(barDesc)},
       'baz': {'package.json': JSON.stringify(bazDesc)}
