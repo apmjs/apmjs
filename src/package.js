@@ -1,4 +1,5 @@
 const assert = require('assert')
+const _ = require('lodash')
 const Version = require('./resolver/version.js')
 const fs = require('fs-extra')
 const debug = require('debug')('apmjs:package')
@@ -47,13 +48,16 @@ Package.prototype.setDirname = function (dirname) {
 }
 
 Package.prototype.equalTo = function (another) {
-  return another && this.name === another.name && this.version === another.version
+  return another &&
+    this.name === another.name &&
+    this.version === another.version
 }
 
 Package.prototype.setPathname = function (pathname) {
   var descriptor = this.descriptor
-  var index = descriptor.browser || descriptor.main || 'index.js'
-  this.filepath = path.join(path.basename(pathname), index)
+  var browser = _.isString(descriptor.browser) ? descriptor.browser : ''
+  var index = browser || descriptor.main || 'index.js'
+  this.filepath = path.join(this.name, index)
   this.fullpath = path.resolve(pathname, index)
   this.descriptorPath = path.resolve(pathname, 'package.json')
   return this

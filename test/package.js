@@ -9,6 +9,7 @@ chai.use(require('chai-as-promised'))
 var foo = {'name': 'foo', 'version': '1.2.3'}
 var bar = {'main': './a.js', 'name': 'bar'}
 var coo = {'browser': './a.js', 'main': './b.js', 'name': 'coo'}
+var scoped = {'name': '@baidu/haa'}
 
 describe('package', function () {
   var pkg
@@ -62,9 +63,15 @@ describe('package', function () {
       })
     })
     it('should take browser field over main field', function () {
-      return expect(new Package(coo, '/coo/haa')).to.include({
-        fullpath: '/coo/haa/a.js',
-        filepath: 'haa/a.js'
+      return expect(new Package(coo, '/haa/coo')).to.include({
+        fullpath: '/haa/coo/a.js',
+        filepath: 'coo/a.js'
+      })
+    })
+    it('should work for scoped package', function () {
+      return expect(new Package(scoped, '/foo/@baidu/haa')).to.include({
+        fullpath: '/foo/@baidu/haa/index.js',
+        filepath: '@baidu/haa/index.js'
       })
     })
   })
