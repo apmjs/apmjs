@@ -1,4 +1,5 @@
 const util = require('util')
+const http = require('http')
 
 function PackageNotFound (name, parent) {
   Error.captureStackTrace(this, this.constructor)
@@ -26,4 +27,22 @@ function InvalidPackageName (packageName) {
 }
 util.inherits(InvalidPackageName, Error)
 
-module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName}
+function InvalidPackageInfo (name, parent) {
+  Error.captureStackTrace(this, this.constructor)
+  this.name = this.constructor.name
+  this.message = `cannot parse package info for ${name}, which is required by ${parent.name}`
+  this.pkgname = name
+  this.code = 'EPKGINFO'
+  this.parent = parent
+}
+util.inherits(InvalidPackageInfo, Error)
+
+function HTTP (status) {
+  Error.captureStackTrace(this, this.constructor)
+  this.name = this.constructor.name
+  this.message = status + ' ' + http.STATUS_CODES[status]
+  this.code = 'EFETCH'
+}
+util.inherits(HTTP, Error)
+
+module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName, InvalidPackageInfo, HTTP}

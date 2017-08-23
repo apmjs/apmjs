@@ -1,4 +1,5 @@
 const fs = require('fs-extra')
+const error = require('../src/utils/error.js')
 const path = require('path')
 const debug = require('debug')('apmjs:test:npm')
 const npm = require('../src/utils/npm.js')
@@ -15,14 +16,16 @@ describe('npm', function () {
   before(() => {
     nock('http://apm')
       .log(debug)
-      .get('/foo')
-      .reply(200, JSON.stringify(fooInfo))
-      .get('/@baidu%2Ffoo')
-      .reply(200, JSON.stringify(fooInfo))
-      .get('/xxx')
-      .reply(404, 'Not Found')
-      .get('/foo/-/foo-1.0.0.tgz')
-      .replyWithFile(200, fooTgz)
+      .get('/foo').reply(200, JSON.stringify(fooInfo))
+      .get('/@baidu%2Ffoo').reply(200, JSON.stringify(fooInfo))
+      // Note: mock twice for 2 requests, same as /foo@1.0.0
+      .get('/xxx').reply(404, 'Not Found')
+      .get('/xxx').reply(404, 'Not Found')
+      .get('/foo/-/foo-1.0.0.tgz').replyWithFile(200, fooTgz)
+      .get('/foo/-/foo-1.0.0.tgz').replyWithFile(200, fooTgz)
+      .get('/foo/-/foo-3.0.2.tgz').reply(302, undefined, {
+        'Location': '/foo/-/foo-1.0.0.tgz'
+      })
     return npm.load({registry: 'http://apm'})
   })
   after(() => nock.cleanAll())
@@ -55,6 +58,7 @@ describe('npm', function () {
     })
   })
   describe('downloadPackage', function () {
+    beforeEach(() => fs.remove('/tmp/apm_modules'))
     it('should download and extract', function () {
       // tarball-extract does not play well with mock-fs
       return npm
@@ -62,7 +66,21 @@ describe('npm', function () {
           'http://apm/foo/-/foo-1.0.0.tgz',
           '/tmp/apm_modules/foo'
         )
-        .then(() => fs.readdir('/tmp/apm_modules/foo'))
+        .then(() => fs.readJson('/tmp/apm_modules/foo/package.json'))
+        .then(pkg => expect(pkg.name).to.equal('foo'))
+    })
+    it('should reject if not exist', function () {
+      return expect(npm.downloadPackage(
+          'http://apm/xxx',
+          '/tmp/apm_modules/foo'
+        ))
+        .to.eventually.be.rejectedWith(error.NotFound, '404 Not Found')
+    })
+    it('should follow 302 redirect', function () {
+      return npm.downloadPackage(
+          'http://apm/foo/-/foo-3.0.2.tgz',
+          '/tmp/apm_modules/foo'
+        )
         .then(() => fs.readJson('/tmp/apm_modules/foo/package.json'))
         .then(pkg => expect(pkg.name).to.equal('foo'))
     })

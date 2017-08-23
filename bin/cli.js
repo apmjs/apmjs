@@ -17,10 +17,6 @@
   process.title = 'npm'
 
   var log = require('npmlog')
-  log.pause() // will be unpaused when config is loaded.
-
-  log.info('it worked if it ends with', 'ok')
-
   var path = require('path')
   var npm = require('npm')
   var npmconf = require('npm/lib/config/core.js')
@@ -31,13 +27,13 @@
   var types = configDefs.types
   var nopt = require('nopt')
 
+  log.level = 'verbose'
+
   // if npm is called as "npmg" or "npm_g", then
   // run in global mode.
   if (path.basename(process.argv[1]).slice(-1) === 'g') {
     process.argv.splice(1, 1, 'npm', '-g')
   }
-
-  log.verbose('cli', process.argv)
 
   var conf = nopt(types, shorthands)
   npm.argv = conf.argv.remain

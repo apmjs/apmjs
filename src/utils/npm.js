@@ -1,6 +1,8 @@
 const registry = require('../registry.js')
 const error = require('./error.js')
+const log = require('npmlog')
 const rp = require('request-promise')
+const request = require('request')
 const Promise = require('bluebird')
 const debug = require('debug')('apmjs:npm')
 const path = require('path')
@@ -15,9 +17,25 @@ function downloadPackage (url, dir) {
   var untardir = `/tmp/${name}`
   var pkgdir = `${untardir}/package`
   // TODO: tarball cache
+  log.verbose('downloading', url)
   return Promise.all([fs.remove(untardir), fs.remove(tarfile)])
+    .then(() => new Promise((resolve, reject) => {
+      var s = request({
+        url: url,
+        followRedirect: true
+      })
+      .on('response', res => {
+        if (res.statusCode >= 400) {
+          reject(new error.HTTP(res.statusCode))
+        } else {
+          s.on('error', reject)
+          .pipe(fs.createWriteStream(tarfile))
+          .on('finish', resolve)
+        }
+      })
+    }))
     .then(() => Promise.fromCallback(
-      cb => tarball.extractTarballDownload(url, tarfile, untardir, {}, cb)
+      cb => tarball.extractTarball(tarfile, untardir, cb)
     ))
     .then(() => fs.move(pkgdir, dir, {overwrite: true}))
 }
@@ -29,7 +47,7 @@ function getPackageInfo (name, parent) {
     return infoCache[name]
   }
   var infoUrl = registry.packageUrl(name)
-  debug('retrieving package info from', infoUrl)
+  log.verbose('retrieving info', infoUrl)
   infoCache[name] = rp({
     url: infoUrl,
     json: true
@@ -43,6 +61,9 @@ function getPackageInfo (name, parent) {
     }
   })
   .tap(desc => {
+    if (!_.has(desc, 'versions')) {
+      throw new error.InvalidPackageInfo(name, parent)
+    }
     var versionList = Object.keys(desc.versions).join(',')
     debug('package info retrieved:', `${desc.name}@${versionList}`)
   })
