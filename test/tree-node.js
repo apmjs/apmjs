@@ -85,7 +85,7 @@ describe('TreeNode', function () {
     it('should populate dependencies field if not listed', function () {
       var parent = new TreeNode({name: 'parent', dependencies: {}})
       return parent.addDependency('bar').then(() => {
-        expect(parent.dependencies).to.have.property('bar', '1.0.x')
+        expect(parent.dependencies).to.have.property('bar', '^1.0.1')
       })
     })
     it('should resave dependency', function () {

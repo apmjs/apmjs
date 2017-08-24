@@ -10,15 +10,15 @@ describe('Version', function () {
   describe('.derive()', function () {
     it('should return 1.0.x for 1.0.0, 0.0.0', function () {
       var info = {versions: {'1.0.0': true, '0.0.0': true}}
-      expect(Version.derive(info)).to.equal('1.0.x')
+      expect(Version.derive(info)).to.equal('^1.0.0')
     })
     it('should return 1.2.x for 1.2.38', function () {
       var info = {versions: {'1.2.38': true}}
-      expect(Version.derive(info)).to.equal('1.2.x')
+      expect(Version.derive(info)).to.equal('^1.2.38')
     })
     it('should return 1.x for 1.2', function () {
       var info = {versions: {'1.2': true, '0.0': true}}
-      expect(Version.derive(info)).to.equal('1.x')
+      expect(Version.derive(info)).to.equal('^1.2')
     })
   })
   describe('.parsePackagName()', function () {

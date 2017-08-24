@@ -33,9 +33,7 @@ function derive (info) {
   if (!lastVersion) {
     return '1.0.x'
   }
-  var nums = lastVersion.split('.')
-  nums[nums.length - 1] = 'x'
-  return nums.join('.')
+  return '^' + lastVersion
 }
 
 module.exports = {
