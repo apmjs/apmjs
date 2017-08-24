@@ -23,20 +23,20 @@ describe('Version', function () {
   })
   describe('.parsePackagName()', function () {
     it('should parse both name and semver components', function () {
-      expect(Version.parsePackageName('foo@>=1.1.0')).to.deep.equal({
+      expect(Version.parseDependencyDeclaration('foo@>=1.1.0')).to.deep.equal({
         name: 'foo',
         semver: '>=1.1.0'
       })
     })
     it('should parse scoped name', function () {
-      expect(Version.parsePackageName('@baidu/foo@>=1.1.0')).to.deep.equal({
+      expect(Version.parseDependencyDeclaration('@baidu/foo@>=1.1.0')).to.deep.equal({
         name: '@baidu/foo',
         semver: '>=1.1.0'
       })
     })
     it('should throw for invalid package name', function () {
       function fn () {
-        Version.parsePackageName('>=2.2')
+        Version.parseDependencyDeclaration('>=2.2')
       }
       expect(fn).to.throw(error.InvalidPackageName, /invalid package name/)
     })

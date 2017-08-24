@@ -108,6 +108,7 @@ TreeNode.prototype.populateChildren = function () {
   var dependencies = _.keys(this.dependencies)
   debug(`populating children ${dependencies} for ${this}`)
   return Promise
+    // no need to pass version, since this.<dep>.version will be the default
     .each(dependencies, name => this.addDependency(name))
     .then(() => this)
 }

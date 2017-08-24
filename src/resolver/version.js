@@ -17,7 +17,7 @@ function upgradeWarning (name, lhs, rhs) {
   console.warn(msg)
 }
 
-function parsePackageName (decl) {
+function parseDependencyDeclaration (decl) {
   var match = /^((?:[@\w-]+\/)?[\w-.]+)(@.*)?$/.exec(decl)
   if (!match) {
     throw new error.InvalidPackageName(decl)
@@ -37,5 +37,5 @@ function derive (info) {
 }
 
 module.exports = {
-  upgradeWarning, maxSatisfying, derive, parsePackageName
+  upgradeWarning, maxSatisfying, derive, parseDependencyDeclaration
 }

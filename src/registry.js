@@ -16,7 +16,7 @@ function getRegistry (name) {
   var cliConfig = npm.config.list[0]
   var userConfig = _.assign({}, defaults, npm.config.list[3])
 
-  if (cliConfig.registry) {
+  if (_.has(cliConfig, 'registry')) {
     return cliConfig.registry
   }
 
