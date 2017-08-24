@@ -61,19 +61,22 @@
     npm.command = 'help'
   }
 
-  Object.defineProperty(npm.commands, 'install', {
-    get: function () {
-      return require('../src/commands/install.js')
-    }
-  })
-
   // now actually fire up npm and run the command.
   // this is how to use npm programmatically:
   conf._exit = true
-  // TODO: support configuration, be conformant to NPM
-  // conf.registry = 'http://apmjs.baidu.com'
   npm.load(conf, function (er) {
     if (er) return errorHandler(er)
+
+    var npmInstall = npm.commands.install
+    Object.defineProperty(npm.commands, 'npmInstall', {
+      get: () => npmInstall
+    })
+    Object.defineProperty(npm.commands, 'install', {
+      get: function () {
+        return require('../src/commands/install.js')
+      }
+    })
+
     npm.commands[npm.command](npm.argv, errorHandler, conf)
   })
 })()
