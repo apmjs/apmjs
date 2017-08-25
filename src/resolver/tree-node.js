@@ -50,7 +50,7 @@ TreeNode.prototype.printTree = function () {
 TreeNode.prototype.addDependency = function (name, semver) {
   debug('adding dependency', name)
   return npm
-    .getPackageInfo(name, this.pkg)
+    .getPackageMeta(name, this.pkg)
     .then(info => {
       semver = semver || this.dependencies[name] || Version.derive(info)
       var latestPackage = this.latestPackage(info, semver)

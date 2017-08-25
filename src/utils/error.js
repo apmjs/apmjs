@@ -27,15 +27,15 @@ function InvalidPackageName (packageName) {
 }
 util.inherits(InvalidPackageName, Error)
 
-function InvalidPackageInfo (name, parent) {
+function InvalidPackageMeta (name, parent) {
   Error.captureStackTrace(this, this.constructor)
   this.name = this.constructor.name
-  this.message = `cannot parse package info for ${name}, which is required by ${parent.name}`
+  this.message = `cannot parse package meta for ${name}, which is required by ${parent.name}`
   this.pkgname = name
-  this.code = 'EPKGINFO'
+  this.code = 'EPKGMETA'
   this.parent = parent
 }
-util.inherits(InvalidPackageInfo, Error)
+util.inherits(InvalidPackageMeta, Error)
 
 function HTTP (status) {
   Error.captureStackTrace(this, this.constructor)
@@ -45,4 +45,4 @@ function HTTP (status) {
 }
 util.inherits(HTTP, Error)
 
-module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName, InvalidPackageInfo, HTTP}
+module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName, InvalidPackageMeta, HTTP}

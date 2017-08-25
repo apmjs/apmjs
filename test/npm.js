@@ -30,9 +30,9 @@ describe('npm', function () {
   })
   after(() => nock.cleanAll())
 
-  describe('getPackageInfo', function () {
+  describe('getPackageMeta', function () {
     it('should get response', function () {
-      return npm.getPackageInfo('foo')
+      return npm.getPackageMeta('foo')
         .then(info => {
           expect(info.versions).to.have.property('1.0.0')
           expect(info.versions['1.0.0']).to.deep.include({
@@ -46,13 +46,13 @@ describe('npm', function () {
         })
     })
     it('should encode package name', function () {
-      return npm.getPackageInfo('@baidu/foo')
+      return npm.getPackageMeta('@baidu/foo')
         .then(info => {
           expect(info).to.have.property('name', 'foo')
         })
     })
     it('should throw on non-exist package', function () {
-      var pending = npm.getPackageInfo('xxx', {name: 'foo'})
+      var pending = npm.getPackageMeta('xxx', {name: 'foo'})
       var msg = 'package xxx not found, required by foo'
       return expect(pending).to.eventually.be.rejectedWith(msg)
     })

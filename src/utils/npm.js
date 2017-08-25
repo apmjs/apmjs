@@ -40,16 +40,16 @@ function downloadPackage (url, dir) {
     .then(() => fs.move(pkgdir, dir, {overwrite: true}))
 }
 
-var infoCache = {}
+var metaCache = {}
 
-function getPackageInfo (name, parent) {
-  if (infoCache[name]) {
-    return infoCache[name]
+function getPackageMeta (name, parent) {
+  if (metaCache[name]) {
+    return metaCache[name]
   }
-  var infoUrl = registry.packageUrl(name)
-  log.verbose('retrieving info', infoUrl)
-  infoCache[name] = rp({
-    url: infoUrl,
+  var metaUrl = registry.packageUrl(name)
+  log.verbose('retrieving meta', metaUrl)
+  metaCache[name] = rp({
+    url: metaUrl,
     json: true
   })
   .promise()
@@ -62,12 +62,12 @@ function getPackageInfo (name, parent) {
   })
   .tap(desc => {
     if (!_.has(desc, 'versions')) {
-      throw new error.InvalidPackageInfo(name, parent)
+      throw new error.InvalidPackageMeta(name, parent)
     }
     var versionList = Object.keys(desc.versions).join(',')
-    debug('package info retrieved:', `${desc.name}@${versionList}`)
+    debug('package meta retrieved:', `${desc.name}@${versionList}`)
   })
-  return infoCache[name]
+  return metaCache[name]
 }
 
 function load (conf) {
@@ -76,4 +76,4 @@ function load (conf) {
   return Promise.fromCallback(cb => npm.load(config, cb))
 }
 
-module.exports = {downloadPackage, getPackageInfo, load}
+module.exports = {downloadPackage, getPackageMeta, load}
