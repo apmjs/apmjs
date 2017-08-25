@@ -1,4 +1,5 @@
 const process = require('process')
+const log = require('npmlog')
 const debug = require('debug')('apmjs:installer')
 const _ = require('lodash')
 const Promise = require('bluebird')
@@ -23,8 +24,9 @@ Installer.prototype.saveMapping = function (pkgs) {
   var fields = ['name', 'version', 'filepath', 'fullpath']
   var meta = pkgs.map(pkg => _.pick(pkg, fields))
   var file = path.resolve(this.pathname, 'index.json')
-  debug('writing dependency mapping to', file)
-  return fs.ensureDir(this.pathname).then(() => fs.writeJson(file, meta, {spaces: 2}))
+  log.verbose('writing mapping', file)
+  return fs.ensureDir(this.pathname)
+  .then(() => fs.writeJson(file, meta, {spaces: 2}))
 }
 
 Installer.prototype.installPackageIfNeeded = function (pkg) {

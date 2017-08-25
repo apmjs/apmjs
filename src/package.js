@@ -34,14 +34,20 @@ Package.load = function (pathname) {
 }
 
 Package.prototype.postInstall = function () {
-  var browser = this.descriptor.browser
   if (!this.pathname) {
     return Promise.reject(new Error('cannot run post-install, setDirname first'))
   }
+  var ps = this.respectBrowser()
+  ps.push(this.writeAMDEntry())
+  return Promise.all(ps)
+}
+
+Package.prototype.respectBrowser = function () {
+  var browser = this.descriptor.browser
   if (!_.isObject(browser)) {
-    return
+    return []
   }
-  var ps = _.map(browser, (replacer, target) => {
+  return _.map(browser, (replacer, target) => {
     var targetPath = path.resolve(this.pathname, target)
     if (replacer === false) {
       return fs.writeFile(targetPath, 'define(function(){})')
@@ -51,7 +57,14 @@ Package.prototype.postInstall = function () {
       console.warn(`failed to mv ${replacer} to ${target}: ${e.message}`)
     })
   })
-  return Promise.all(ps)
+}
+
+Package.prototype.writeAMDEntry = function () {
+  var mod = _.trimEnd(this.filepath, '.js')
+  return fs.writeFile(
+    this.amdpath,
+    `define('${this.name}', ['./${mod}'], function (mod) { return mod; })`
+  )
 }
 
 Package.prototype.toString = function () {
@@ -80,6 +93,7 @@ Package.prototype.setPathname = function (pathname) {
   var index = browser || descriptor.main || 'index.js'
   this.filepath = path.join(this.name, index)
   this.fullpath = path.resolve(pathname, index)
+  this.amdpath = pathname + '.js'
   this.pathname = pathname
   this.descriptorPath = path.resolve(pathname, 'package.json')
   return this

@@ -21,6 +21,7 @@ describe('package', function () {
   })
   beforeEach(() => mock({
     '/root/hoo/foo.js': 'FOO',
+    '/root/hoo.js': 'hoo.js',
     '/root/hoo/bar/b.js': 'BAR',
     '/root/foo/package.json': '{"name": "foo", "author": "harttle", "dependencies": {"foo": "1.2.3"}}'
   }))
@@ -143,6 +144,13 @@ describe('package', function () {
         .then(ret => expect(ret).to.be.false)
         .then(() => fs.readFile('/root/hoo/foo.js', {encoding: 'utf8'}))
         .then(ret => expect(ret).to.equal('BAR'))
+    })
+    it('should create AMD entry', function () {
+      pkgHoo.setDirname('/root')
+      return pkgHoo
+        .postInstall()
+        .then(() => fs.readFile('/root/hoo.js', {encoding: 'utf8'}))
+        .then(ret => expect(ret).to.equal("define('hoo', ['./hoo/b'], function (mod) { return mod; })"))
     })
     it('should clear module when set false', function () {
       pkgHoo.setDirname('/root')
