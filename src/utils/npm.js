@@ -1,4 +1,5 @@
 const registry = require('../registry.js')
+const os = require('os')
 const error = require('./error.js')
 const log = require('npmlog')
 const rp = require('request-promise')
@@ -13,9 +14,9 @@ const _ = require('lodash')
 
 function downloadPackage (url, dir) {
   var name = path.basename(url)
-  var tarfile = `/tmp/${name}.tgz`
-  var untardir = `/tmp/${name}`
-  var pkgdir = `${untardir}/package`
+  var tarfile = path.join(os.tmpdir(), `${name}.tgz`)
+  var untardir = path.join(os.tmpdir(), `${name}`)
+  var pkgdir = path.join(untardir, 'package')
   // TODO: tarball cache
   log.verbose('downloading', url)
   return Promise.all([fs.remove(untardir), fs.remove(tarfile)])

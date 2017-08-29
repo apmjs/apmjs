@@ -1,4 +1,5 @@
 const fs = require('fs-extra')
+const os = require('os')
 const error = require('../src/utils/error.js')
 const path = require('path')
 const debug = require('debug')('apmjs:test:npm')
@@ -58,30 +59,34 @@ describe('npm', function () {
     })
   })
   describe('downloadPackage', function () {
-    beforeEach(() => fs.remove('/tmp/apm_modules'))
+    beforeEach(() => fs.remove(
+        path.join(os.tmpdir(), 'amd_modules')
+    ))
     it('should download and extract', function () {
       // tarball-extract does not play well with mock-fs
       return npm
         .downloadPackage(
           'http://apm/foo/-/foo-1.0.0.tgz',
-          '/tmp/apm_modules/foo'
+          path.join(os.tmpdir(), 'amd_modules/foo')
         )
-        .then(() => fs.readJson('/tmp/apm_modules/foo/package.json'))
+        .then(() => fs.readJson(path.join(os.tmpdir(), 'amd_modules/foo/package.json')))
         .then(pkg => expect(pkg.name).to.equal('foo'))
     })
     it('should reject if not exist', function () {
       return expect(npm.downloadPackage(
           'http://apm/xxx',
-          '/tmp/apm_modules/foo'
+          path.join(os.tmpdir(), 'amd_modules/foo')
         ))
         .to.eventually.be.rejectedWith(error.NotFound, '404 Not Found')
     })
     it('should follow 302 redirect', function () {
       return npm.downloadPackage(
           'http://apm/foo/-/foo-3.0.2.tgz',
-          '/tmp/apm_modules/foo'
+          path.join(os.tmpdir(), 'amd_modules/foo')
         )
-        .then(() => fs.readJson('/tmp/apm_modules/foo/package.json'))
+        .then(() => fs.readJson(
+          path.join(os.tmpdir(), 'amd_modules/foo/package.json')
+        ))
         .then(pkg => expect(pkg.name).to.equal('foo'))
     })
   })
