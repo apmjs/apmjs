@@ -127,6 +127,17 @@ describe('package', function () {
         }))
     })
   })
+  describe('.normalizeAMDPath()', function () {
+    it('should normalize win path', function () {
+      expect(Package.normalizeAMDPath('b\\c\\d')).to.equal('./b/c/d')
+    })
+    it('should normalize unix path', function () {
+      expect(Package.normalizeAMDPath('b/c/d')).to.equal('./b/c/d')
+    })
+    it('should normalize mixed path', function () {
+      expect(Package.normalizeAMDPath('b/c\\d')).to.equal('./b/c/d')
+    })
+  })
   describe('#postInstall()', function () {
     var pkgHoo
     beforeEach(() => {

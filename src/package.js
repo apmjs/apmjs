@@ -60,10 +60,10 @@ Package.prototype.respectBrowser = function () {
 }
 
 Package.prototype.writeAMDEntry = function () {
-  var mod = _.trimEnd(this.filepath, '.js')
+  var mod = normalizeAMDPath(this.filepath)
   return fs.writeFile(
     this.amdpath,
-    `define('${this.name}', ['./${mod}'], function (mod) { return mod; })`
+    `define('${this.name}', ['${mod}'], function (mod) { return mod; })`
   )
 }
 
@@ -133,5 +133,11 @@ Package.prototype.distname = function (dirname) {
 Package.prototype.toString = function () {
   return this.name + '@' + this.version
 }
+
+function normalizeAMDPath (filepath) {
+  return './' + _.trimEnd(filepath, '.js').replace(/\\/g, '/')
+}
+
+Package.normalizeAMDPath = normalizeAMDPath
 
 module.exports = Package
