@@ -38,7 +38,7 @@ describe('npm', function () {
           expect(info.versions).to.have.property('1.0.0')
           expect(info.versions['1.0.0']).to.deep.include({
             name: 'foo',
-            dependencies: {},
+            amdDependencies: {},
             dist: {
               shasum: '943e0ec03df00ebeb6273a5b94b916ba54b47581',
               tarball: 'http://apm/foo/-/foo-1.0.0.tgz'

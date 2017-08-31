@@ -4,7 +4,7 @@
     "1.0.0": {
       "name": "hoo",
       "version": "1.0.0",
-      "dependencies": {
+      "amdDependencies": {
         "haa": "1.0.1"
       }
     }

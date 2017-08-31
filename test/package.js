@@ -23,7 +23,7 @@ describe('package', function () {
     '/root/hoo/foo.js': 'FOO',
     '/root/hoo.js': 'hoo.js',
     '/root/hoo/bar/b.js': 'BAR',
-    '/root/foo/package.json': '{"name": "foo", "author": "harttle", "dependencies": {"foo": "1.2.3"}}'
+    '/root/foo/package.json': '{"name": "foo", "author": "harttle", "amdDependencies": {"foo": "1.2.3"}}'
   }))
   afterEach(() => mock.restore())
   describe('.load()', function () {
@@ -121,7 +121,7 @@ describe('package', function () {
         .then(json => expect(json).to.deep.equal({
           name: 'foo',
           author: 'harttle',
-          dependencies: {
+          amdDependencies: {
             bar: '2.2.2'
           }
         }))

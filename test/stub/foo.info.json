@@ -8,7 +8,7 @@
         "url": "http://coolaj86.info"
       },
       "name": "foo",
-      "description": "A test module with no `main`, `lib`, or `dependencies` specified",
+      "description": "A test module with no `main`, `lib`, or `amdDependencies` specified",
       "version": "1.0.0",
       "repository": {
         "type": "git",
@@ -22,7 +22,7 @@
         "email": "coolaj86@gmail.com"
       },
       "_id": "foo@1.0.0",
-      "dependencies": {},
+      "amdDependencies": {},
       "devDependencies": {},
       "_engineSupported": true,
       "_npmVersion": "1.0.101",

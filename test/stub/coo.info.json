@@ -4,14 +4,14 @@
     "1.0.0": {
       "name": "coo",
       "version": "1.0.0",
-      "dependencies": {
+      "amdDependencies": {
         "bar": "1.0.0"
       }
     },
     "1.0.1": {
       "name": "coo",
       "version": "1.0.1",
-      "dependencies": {
+      "amdDependencies": {
         "bar": "1.0.1"
       }
     }

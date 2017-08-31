@@ -4,12 +4,12 @@
     "1.0.0": {
       "name": "bar",
       "version": "1.0.0",
-      "dependencies": {}
+      "amdDependencies": {}
     },
     "1.0.1": {
       "name": "bar",
       "version": "1.0.1",
-      "dependencies": {}
+      "amdDependencies": {}
     }
   }
 }

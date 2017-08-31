@@ -12,7 +12,7 @@ function Package (descriptor, pathname) {
 
   this.version = descriptor.version || '0.0.0'
   this.name = descriptor.name
-  this.dependencies = descriptor.dependencies || {}
+  this.dependencies = descriptor.amdDependencies || {}
   this.descriptor = descriptor
   if (pathname) {
     this.setPathname(pathname)
@@ -110,7 +110,7 @@ Package.prototype.saveDependencies = function () {
   return fs
     .readJson(file)
     .then(pkg => {
-      pkg.dependencies = this.dependencies
+      pkg.amdDependencies = this.dependencies
       return fs.writeJson(file, pkg, {spaces: 2})
     })
 }
