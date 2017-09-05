@@ -23,7 +23,10 @@ describe('package', function () {
     '/root/hoo/foo.js': 'FOO',
     '/root/hoo.js': 'hoo.js',
     '/root/hoo/bar/b.js': 'BAR',
-    '/root/foo/package.json': '{"name": "foo", "author": "harttle", "amdDependencies": {"foo": "1.2.3"}}'
+    '/root/foo/package.json': '{"name": "foo", "author": "harttle", "amdDependencies": {"foo": "1.2.3"}}',
+    '/root/@baidu': {
+      'haa': {}
+    }
   }))
   afterEach(() => mock.restore())
   describe('.load()', function () {
@@ -129,13 +132,33 @@ describe('package', function () {
   })
   describe('.normalizeAMDPath()', function () {
     it('should normalize win path', function () {
-      expect(Package.normalizeAMDPath('b\\c\\d')).to.equal('./b/c/d')
+      var pkg = new Package({
+        name: 'foo',
+        main: 'b\\c\\d'
+      }, '/root/foo')
+      expect(pkg.relativeModuleId()).to.equal('./foo/b/c/d')
+    })
+    it('should normalize win path using setDirname', function () {
+      var pkg = new Package({
+        name: 'foo',
+        main: 'b\\c\\d'
+      })
+      pkg.setDirname('/root/foo')
+      expect(pkg.relativeModuleId()).to.equal('./foo/b/c/d')
     })
     it('should normalize unix path', function () {
-      expect(Package.normalizeAMDPath('b/c/d')).to.equal('./b/c/d')
+      var pkg = new Package({
+        name: 'foo',
+        main: 'b/c/d'
+      }, '/root/foo')
+      expect(pkg.relativeModuleId()).to.equal('./foo/b/c/d')
     })
     it('should normalize mixed path', function () {
-      expect(Package.normalizeAMDPath('b/c\\d')).to.equal('./b/c/d')
+      var pkg = new Package({
+        name: 'foo',
+        main: 'b/c\\d'
+      }, '/root/foo')
+      expect(pkg.relativeModuleId()).to.equal('./foo/b/c/d')
     })
   })
   describe('#postInstall()', function () {
@@ -163,7 +186,13 @@ describe('package', function () {
         .then(() => fs.readFile('/root/hoo.js', {encoding: 'utf8'}))
         .then(ret => expect(ret).to.equal("define('hoo', ['./hoo/b'], function (mod) { return mod; })"))
     })
-    it('should clear module when set false', function () {
+    it('should create AMD entry for scoped package', function () {
+      return new Package(scoped, '/root/@baidu/haa')
+        .postInstall()
+        .then(() => fs.readFile('/root/@baidu/haa.js', {encoding: 'utf8'}))
+        .then(ret => expect(ret).to.equal("define('@baidu/haa', ['./haa/index'], function (mod) { return mod; })"))
+    })
+    it('should clear module when browser set false', function () {
       pkgHoo.setDirname('/root')
       return pkgHoo
         .postInstall()
