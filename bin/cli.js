@@ -67,10 +67,6 @@
   npm.load(conf, function (er) {
     if (er) return errorHandler(er)
 
-    var npmInstall = npm.commands.install
-    Object.defineProperty(npm.commands, 'npmInstall', {
-      get: () => npmInstall
-    })
     Object.defineProperty(npm.commands, 'install', {
       get: function () {
         return require('../src/commands/install.js')

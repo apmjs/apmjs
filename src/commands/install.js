@@ -1,7 +1,6 @@
 const debug = require('debug')('apmjs:commands:install')
 const version = require('../resolver/version.js')
 const process = require('process')
-const npm = require('npm')
 const _ = require('lodash')
 const Promise = require('bluebird')
 const resolver = require('../resolver/index.js')
@@ -10,25 +9,9 @@ const TreeNode = require('../resolver/tree-node.js')
 const Package = require('../package.js')
 
 function install (dependencies, errorHandler, conf) {
-  return Promise.resolve()
-  .then(() => {
-    if (_.size(dependencies)) {
-      return conf['save-dev']
-      ? npmInstall(dependencies)
-      : apmInstall(dependencies, conf)
-    }
-    return apmInstall(dependencies, conf)
-    .then(() => npmInstall(dependencies, true))
-  })
+  return apmInstall(dependencies, conf)
   .then(() => errorHandler())
   .catch(err => errorHandler(err))
-}
-
-function npmInstall (dependencies, onlyDev) {
-  if (onlyDev) {
-    npm.config.set('only', 'dev')
-  }
-  return Promise.fromCallback(cb => npm.commands.npmInstall(dependencies, cb))
 }
 
 function apmInstall (dependencies, conf) {
