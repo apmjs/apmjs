@@ -4,7 +4,8 @@
   "description": "AMD package manager",
   "main": "index.js",
   "bin": {
-    "apm": "./bin/cli.js"
+    "apm": "./bin/cli.js",
+    "apmjs": "./bin/cli.js"
   },
   "scripts": {
     "lint": "eslint src bin test",
