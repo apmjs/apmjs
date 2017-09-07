@@ -184,13 +184,13 @@ describe('package', function () {
       return pkgHoo
         .postInstall()
         .then(() => fs.readFile('/root/hoo.js', {encoding: 'utf8'}))
-        .then(ret => expect(ret).to.equal("define('hoo', ['./hoo/b'], function (mod) { return mod; })"))
+        .then(ret => expect(ret).to.equal("define(['./hoo/b'], function (mod) { return mod; })"))
     })
     it('should create AMD entry for scoped package', function () {
       return new Package(scoped, '/root/@baidu/haa')
         .postInstall()
         .then(() => fs.readFile('/root/@baidu/haa.js', {encoding: 'utf8'}))
-        .then(ret => expect(ret).to.equal("define('@baidu/haa', ['./haa/index'], function (mod) { return mod; })"))
+        .then(ret => expect(ret).to.equal("define(['./haa/index'], function (mod) { return mod; })"))
     })
     it('should clear module when browser set false', function () {
       pkgHoo.setDirname('/root')

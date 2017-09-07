@@ -63,7 +63,7 @@ Package.prototype.writeAMDEntry = function () {
   var mod = this.relativeModuleId()
   return fs.writeFile(
     this.amdpath,
-    `define('${this.name}', ['${mod}'], function (mod) { return mod; })`
+    `define(['${mod}'], function (mod) { return mod; })`
   )
 }
 
