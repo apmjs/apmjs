@@ -16,6 +16,7 @@
 
   process.title = 'npm'
 
+  var pkg = require('../package.json')
   var log = require('npmlog')
   var path = require('path')
   var npm = require('npm')
@@ -41,8 +42,8 @@
   else conf.usage = true
 
   if (conf.version) {
-    console.log(npm.version)
-    return
+    console.log(pkg.version)
+    return errorHandler.exit(0)
   }
 
   if (conf.versions) {
@@ -73,6 +74,7 @@
       }
     })
 
+    console.log(npm.command)
     npm.commands[npm.command](npm.argv, errorHandler, conf)
   })
 })()
