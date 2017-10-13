@@ -8,7 +8,7 @@ const fs = require('fs-extra')
 const findUp = require('./utils/fs.js').findUp
 const npm = require('./utils/npm')
 
-function linkToGlobal () {
+function linkCurrent () {
   return Promise.all([
     Package.load(),
     fs.ensureDir(npm.globalDir)
@@ -29,14 +29,14 @@ function loadOrInstall (name, semver) {
      )
 }
 
-function linkFromGlobal (decl) {
+function linkDependency (decl) {
   var pkgDescriptor = Version.parseDependencyDeclaration(decl)
   return Promise
     .all([
       loadOrInstall(pkgDescriptor.name, pkgDescriptor.semver),
       Promise.any([
-        findUp('node_modules'),
-        findUp('package.json').then(file => path.resolve(file, '../node_modules'))
+        findUp('amd_modules'),
+        findUp('package.json').then(file => path.resolve(file, '../amd_modules'))
       ])
     ])
     .spread((pkg, dir) => {
@@ -47,5 +47,41 @@ function linkFromGlobal (decl) {
     })
 }
 
-exports.linkFromGlobal = linkFromGlobal
-exports.linkToGlobal = linkToGlobal
+function unlinkCurrent () {
+  return Promise.all([
+    Package.load(),
+    fs.ensureDir(npm.globalDir)
+  ])
+  .spread(pkg => {
+    var link = path.resolve(npm.globalDir, pkg.name)
+    return fs.unlink(link).then(() => console.log(`unlink ${link}`))
+  })
+  .catch(e => {
+    if (e.code === 'ENOENT') {
+      console.log('already unlinked')
+      return
+    }
+    throw e
+  })
+}
+
+function unlinkDependency (name) {
+  return Promise
+    .any([
+      findUp('amd_modules'),
+      findUp('package.json').then(file => path.resolve(file, '../amd_modules'))
+    ])
+    .then(dir => {
+      var link = path.resolve(dir, name)
+      return fs.unlink(link).then(() => console.log(`unlink ${link}`))
+    })
+    .catch(e => {
+      if (e.code === 'ENOENT') {
+        console.log('already unlinked')
+        return
+      }
+      throw e
+    })
+}
+
+module.exports = {linkCurrent, unlinkCurrent, linkDependency, unlinkDependency}

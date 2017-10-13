@@ -27,7 +27,7 @@ var dooJson = {
 var doo = {
   'package.json': JSON.stringify(dooJson),
   'index.js': 'doo-content',
-  'node_modules': {foo, bar}
+  'amd_modules': {foo, bar}
 }
 
 var laaJson = {
@@ -40,7 +40,7 @@ var laaJson = {
 var laa = {
   'package.json': JSON.stringify(laaJson),
   'index.js': 'laa-content',
-  'node_modules': {doo}
+  'amd_modules': {doo}
 }
 
 module.exports = {

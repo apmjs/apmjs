@@ -2,13 +2,13 @@ const debug = require('debug')('apmjs:commands:link')
 const linker = require('../linker.js')
 
 module.exports = function (argv, errorHandler) {
-  link.apply(null, argv)
+  unlink.apply(null, argv)
   .then(() => errorHandler())
   .catch(err => errorHandler(err))
 }
 
-function link (name) {
+function unlink (name) {
   return arguments.length === 0
-    ? linker.linkCurrent()
-    : linker.linkDependency(name)
+    ? linker.unlinkCurrent()
+    : linker.unlinkDependency(name)
 }

@@ -26,3 +26,12 @@ $ apmjs install @searchfe/promise
 
 For more details, see: https://github.com/apmjs/apmjs/wiki.
 
+
+## Differences with NPM cli
+
+* `apmjs install`: Resolve and flatten ddependencies, see [dependency-resolving][dependency-resolving]
+* `apmjs link`: Link to/from `<npm-prefix>/lib/amd_modules`, install as needed
+* `apmjs unlink`: Unlink global AMD modules
+* `apmjs version`: Prints apmjs version, of course.
+
+[dependency-resolving]: https://github.com/apmjs/apmjs/wiki/Dependency-Resolving

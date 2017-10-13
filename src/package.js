@@ -12,7 +12,7 @@ const Promise = require('bluebird')
 function Package (descriptor, pathname) {
   assert(descriptor.name, 'package name not defined for ' + pathname)
 
-  this.version = descriptor.version || '0.0.0'
+  this.version = descriptor.version
   this.name = descriptor.name
   this.dependencies = descriptor.amdDependencies || {}
   this.descriptor = descriptor
