@@ -43,6 +43,11 @@ function downloadPackage (url, dir) {
 
 var metaCache = {}
 
+/**
+ * get meta for package `name`
+ *
+ * @param {Package} parent parent for error promotion
+ */
 function getPackageMeta (name, parent) {
   if (metaCache[name]) {
     return metaCache[name]
@@ -77,4 +82,16 @@ function load (conf) {
   return Promise.fromCallback(cb => npm.load(config, cb))
 }
 
-module.exports = {downloadPackage, getPackageMeta, load}
+var npmDelegate = {downloadPackage, getPackageMeta, load}
+
+Object.defineProperties(npmDelegate, {
+  'globalDir': {
+    get: () => {
+      var p = path.resolve(npm.globalDir, '../amd_modules')
+      return p
+    },
+    configurable: true
+  }
+})
+
+module.exports = npmDelegate

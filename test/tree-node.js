@@ -36,15 +36,6 @@ describe('TreeNode', function () {
       expect(gn).to.not.throw()
     })
   })
-  describe('#latestPackage()', function () {
-    it('should throw EUNMET if no version available', function () {
-      var parent = new TreeNode({name: 'mine'})
-      function gn () {
-        return parent.latestPackage({name: 'foo'}, '1.0.x')
-      }
-      expect(gn).to.throw('foo@1.0.x not available, required by mine')
-    })
-  })
   describe('#addDependency()', function () {
     it('should retrieve info and create a TreeNode', function () {
       var parent = new TreeNode({name: 'parent', dependencies: {'foo': '1.0.x'}})

@@ -4,10 +4,13 @@ const http = require('http')
 function PackageNotFound (name, parent) {
   Error.captureStackTrace(this, this.constructor)
   this.name = this.constructor.name
-  this.message = `package ${name} not found, required by ${parent.name}`
+  this.message = `package ${name} not found`
   this.pkgname = name
   this.code = 'ENOTFOUND'
-  this.parent = parent
+  if (parent) {
+    this.message += `, required by ${parent.name}`
+    this.parent = parent
+  }
 }
 util.inherits(PackageNotFound, Error)
 
@@ -30,10 +33,13 @@ util.inherits(InvalidPackageName, Error)
 function InvalidPackageMeta (name, parent) {
   Error.captureStackTrace(this, this.constructor)
   this.name = this.constructor.name
-  this.message = `cannot parse package meta for ${name}, which is required by ${parent.name}`
+  this.message = `cannot parse package meta for ${name}`
   this.pkgname = name
   this.code = 'EPKGMETA'
-  this.parent = parent
+  if (parent) {
+    this.message += `, which is required by ${parent.name}`
+    this.parent = parent
+  }
 }
 util.inherits(InvalidPackageMeta, Error)
 

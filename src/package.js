@@ -1,4 +1,6 @@
 const assert = require('assert')
+const error = require('./utils/error.js')
+const findUp = require('./utils/fs.js').findUp
 const _ = require('lodash')
 const Version = require('./resolver/version.js')
 const fs = require('fs-extra')
@@ -20,14 +22,57 @@ function Package (descriptor, pathname) {
 }
 
 Package.load = function (pathname) {
-  return Promise
-    .resolve(path.resolve(pathname, 'package.json'))
-    .tap(file => debug('loading package from', file))
-    .then(filepath => fs.readJson(filepath))
+  return findUp('package.json', pathname)
+    .tap(file => {
+      debug('loading package from', file)
+      pathname = path.dirname(file)
+    })
+    .then(file => fs.readJson(file))
     .then(descriptor => new Package(descriptor, pathname))
+}
+
+/**
+ * Get latest package object from meta info
+ *
+ * @param {String} [semver="*"] required semver
+ * @param {String} [tracing=undefined] tracing info printed on error
+ */
+Package.latestPackage = function (info, semver, tracing) {
+  semver = semver || '*'
+  var name = info.name
+  var maxSatisfiying = Package.maxSatisfying(info.versions, semver)
+
+  if (!maxSatisfiying) {
+    var msg = `package ${name}@${semver} not available`
+    if (tracing) {
+      msg += ', ' + tracing
+    }
+    throw new error.UnmetDependency(msg)
+  }
+  return maxSatisfiying
+}
+
+/**
+ * @param {String} version if not specified, all versions are OK
+ */
+Package.hasInstalled = function (name, version, pathname) {
+  return new Package({name, version}).hasInstalled(pathname)
+}
+
+Package.prototype.hasInstalled = function (pathname) {
+  return fs.readJson(path.join(pathname, this.name, 'package.json'))
+    .then(json => {
+      if (json.name !== this.name) {
+        return false
+      }
+      if (this.version && this.version !== json.version) {
+        return false
+      }
+      return true
+    })
     .catch(e => {
       if (e.code === 'ENOENT') {
-        return new Package({name: 'tmp'})
+        return false
       }
       throw e
     })

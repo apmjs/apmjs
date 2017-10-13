@@ -21,7 +21,7 @@ describe('Version', function () {
       expect(Version.derive(info)).to.equal('^1.2')
     })
   })
-  describe('.parsePackagName()', function () {
+  describe('.parseDependencyDeclaration()', function () {
     it('should parse both name and semver components', function () {
       expect(Version.parseDependencyDeclaration('foo@>=1.1.0')).to.deep.equal({
         name: 'foo',
@@ -39,6 +39,12 @@ describe('Version', function () {
         Version.parseDependencyDeclaration('>=2.2')
       }
       expect(fn).to.throw(error.InvalidPackageName, /invalid package name/)
+    })
+    it('should parse as * when given only name', function () {
+      expect(Version.parseDependencyDeclaration('foo')).to.deep.equal({
+        name: 'foo',
+        semver: '*'
+      })
     })
   })
   describe('.upgradeWarning()', function () {

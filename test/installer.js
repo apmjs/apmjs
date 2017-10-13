@@ -7,29 +7,65 @@ const fs = require('fs-extra')
 const sinon = require('sinon')
 const Package = require('../src/package.js')
 const _ = require('lodash')
-const fooDesc = require('./stub/foo.info.json').versions['1.0.0']
-const foo = new Package(fooDesc)
 chai.use(require('sinon-chai'))
 chai.use(require('chai-as-promised'))
 
 describe('Installer', function () {
   var inst
+  var fooDesc = require('./stub/foo.info.json').versions['1.0.0']
+  var foo = new Package(fooDesc)
   var barDesc = _.chain(fooDesc).clone().set('name', 'bar').value()
-  var bar = new Package(_.chain(barDesc).clone().set('version', '2.0.0').value())
   var bazDesc = _.chain(fooDesc).clone().set('name', 'baz').value()
-  var baz = new Package(bazDesc)
+  var sandbox
 
   beforeEach(function () {
-    inst = new Installer('/root')
-    sinon.stub(npm, 'downloadPackage').returns(Promise.resolve())
-    mock({'/root': { 'amd_modules': {
-      'bar': {'package.json': JSON.stringify(barDesc)},
-      'baz': {'package.json': JSON.stringify(bazDesc)}
-    }}})
+    inst = new Installer('/root/amd_modules')
+    sandbox = sinon.sandbox.create()
+    sandbox.stub(npm, 'downloadPackage')
+      .returns(Promise.resolve())
+    sandbox.stub(npm, 'getPackageMeta')
+      .returns(Promise.resolve(require('./stub/baz.info.json')))
+
+    // FIXME cannot restore
+    Object.defineProperty(npm, 'globalDir', {
+      get: () => '/root/bar/amd_modules'
+    })
+    mock({'/root': {
+      'amd_modules': {
+        'bar': {'package.json': JSON.stringify(barDesc)},
+        'baz': {'package.json': JSON.stringify(bazDesc)}
+      },
+      'bar': {
+        'amd_modules': {}
+      }
+    }})
   })
   afterEach(function () {
-    npm.downloadPackage.restore()
+    sandbox.restore()
     mock.restore()
+  })
+  describe('.globalInstall ', function () {
+    beforeEach(function () {
+      sandbox
+        .stub(Installer.prototype, 'installPackage')
+        .returns(Promise.resolve())
+    })
+    it('should install latest by default', function () {
+      return Installer.globalInstall('foo').then(function () {
+        expect(Installer.prototype.installPackage).to.have.been.calledOnce
+        var args = Installer.prototype.installPackage.args[0]
+        expect(args[0]).to.have.property('name', 'baz')
+        expect(args[0]).to.have.property('version', '1.1.0')
+      })
+    })
+    it('should install maxSatisfying', function () {
+      return Installer.globalInstall('foo@1.0.*').then(function () {
+        expect(Installer.prototype.installPackage).to.have.been.calledOnce
+        var args = Installer.prototype.installPackage.args[0]
+        expect(args[0]).to.have.property('name', 'baz')
+        expect(args[0]).to.have.property('version', '1.0.1')
+      })
+    })
   })
   describe('#installPackage()', function () {
     it('should install foo to /root/amd_modules/foo', function () {
@@ -52,17 +88,6 @@ describe('Installer', function () {
       return inst.saveMapping(map)
         .then(() => fs.readFile('/root/amd_modules/index.json', {encoding: 'utf8'}))
         .then(index => expect(index).to.deep.equal(str))
-    })
-  })
-  describe('#hasInstalled()', function () {
-    it('should resolve as false if not installed', function () {
-      return expect(inst.hasInstalled(foo)).to.eventually.equal(false)
-    })
-    it('should resolve as false if version not correct', function () {
-      return expect(inst.hasInstalled(bar)).to.eventually.equal(false)
-    })
-    it('should resolve as true if installed correctly', function () {
-      return expect(inst.hasInstalled(baz)).to.eventually.equal(true)
     })
   })
 })

@@ -68,13 +68,18 @@
   npm.load(conf, function (er) {
     if (er) return errorHandler(er)
 
-    Object.defineProperty(npm.commands, 'install', {
-      get: function () {
-        return require('../src/commands/install.js')
+    Object.defineProperties(npm.commands, {
+      'install': {
+        get: () => require('../src/commands/install.js')
+      },
+      'link': {
+        get: () => require('../src/commands/link.js')
+      },
+      'unlink': {
+        get: () => require('../src/commands/unlink.js')
       }
     })
 
-    console.log(npm.command)
     npm.commands[npm.command](npm.argv, errorHandler, conf)
   })
 })()

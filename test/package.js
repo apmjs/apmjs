@@ -1,4 +1,5 @@
 const Package = require('../src/package.js')
+const meta = require('./stub/baz.info.json')
 const fs = require('fs-extra')
 const chai = require('chai')
 const expect = chai.expect
@@ -23,7 +24,10 @@ describe('package', function () {
     '/root/hoo/foo.js': 'FOO',
     '/root/hoo.js': 'hoo.js',
     '/root/hoo/bar/b.js': 'BAR',
-    '/root/foo/package.json': '{"name": "foo", "author": "harttle", "amdDependencies": {"foo": "1.2.3"}}',
+    '/root/foo': {
+      'package.json': '{"name": "foo", "author": "harttle", "amdDependencies": {"foo": "1.2.3"}}',
+      bar: {}
+    },
     '/root/@baidu': {
       'haa': {}
     }
@@ -35,10 +39,46 @@ describe('package', function () {
         expect(pkg).to.have.property('name', 'foo')
       })
     })
-    it('should load empty package.json without exception', function () {
-      return Package.load('/root/bar').then(pkg => {
-        expect(pkg).to.have.property('name', 'tmp')
+    it('should load from package sub-directory', function () {
+      return Package.load('/root/foo/bar').then(pkg => {
+        expect(pkg).to.have.property('name', 'foo')
       })
+    })
+    it('should throw if not exist', function () {
+      return expect(Package.load('/root/bar'))
+        .to.eventually.rejectedWith(/ENOENT/)
+    })
+  })
+  describe('#hasInstalled()', function () {
+    it('should resolve as false if not installed', function () {
+      var pkg = new Package({name: 'foo'})
+      return expect(pkg.hasInstalled('/root/hoo')).to.eventually.equal(false)
+    })
+    it('should resolve as false if version not correct', function () {
+      var pkg = new Package({name: 'foo', version: '2.2'})
+      return expect(pkg.hasInstalled('/root')).to.eventually.equal(false)
+    })
+    it('should resolve as true if installed correctly', function () {
+      var pkg = new Package({name: 'foo', version: '1.2.3'})
+      return expect(pkg.hasInstalled('/root')).to.eventually.equal(false)
+    })
+  })
+  describe('.latestPackage()', function () {
+    it('should respect tracing info on error message', function () {
+      return expect(Package.latestPackage(meta, '1.0.x'))
+        .to.have.property('version', '1.0.1')
+    })
+    it('should throw EUNMET if no version available', function () {
+      function gn () {
+        return Package.latestPackage({name: 'foo'}, '1.0.x')
+      }
+      expect(gn).to.throw('package foo@1.0.x not available')
+    })
+    it('should respect tracing info on error message', function () {
+      function gn () {
+        return Package.latestPackage({name: 'foo'}, '1.0.x', 'required by a@2')
+      }
+      expect(gn).to.throw('package foo@1.0.x not available, required by a@2')
     })
   })
   describe('new Package()', function () {

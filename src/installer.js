@@ -1,19 +1,28 @@
 const process = require('process')
+const Package = require('./package.js')
 const log = require('npmlog')
 const debug = require('debug')('apmjs:installer')
 const _ = require('lodash')
 const Promise = require('bluebird')
 const fs = require('fs-extra')
-const Package = require('./package')
 const npm = require('./utils/npm.js')
 const path = require('path')
 
 function Installer (dirname) {
-  dirname = dirname || process.cwd()
-  this.pathname = path.resolve(dirname, 'amd_modules')
+  this.pathname = dirname || path.resolve(process.cwd(), 'amd_modules')
+}
+
+Installer.globalInstall = function (name, semver) {
+  var installer = new Installer(npm.globalDir)
+  return npm.getPackageMeta(name)
+    .then(meta => Package.latestPackage(meta, semver))
+    .then(pkg => installer.install(pkg).then(() => pkg))
 }
 
 Installer.prototype.install = function (packages) {
+  if (!(packages instanceof Array)) {
+    packages = [packages]
+  }
   return Promise
     .map(packages, pkg => pkg.setDirname(this.pathname))
     .map(pkg => this.installPackageIfNeeded(pkg))
@@ -30,8 +39,7 @@ Installer.prototype.saveMapping = function (pkgs) {
 }
 
 Installer.prototype.installPackageIfNeeded = function (pkg) {
-  return this
-    .hasInstalled(pkg)
+  return pkg.hasInstalled(this.pathname)
     .then(exists => {
       if (exists) { return }
       return this.installPackage(pkg)
@@ -44,19 +52,6 @@ Installer.prototype.installPackage = function (pkg) {
   return npm
     .downloadPackage(url, dir)
     .then(() => pkg.postInstall())
-}
-
-Installer.prototype.hasInstalled = function (pkg) {
-  var pkgPath = path.resolve(this.pathname, pkg.name)
-  return Package.load(pkgPath)
-    .then(installed => installed.equalTo(pkg))
-    .catch(e => {
-      if (e.code === 'ENOENT') {
-        return false
-      } else {
-        throw e
-      }
-    })
 }
 
 module.exports = Installer

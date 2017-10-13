@@ -4,7 +4,6 @@ const treePrinter = require('tree-printer')
 const Package = require('../package.js')
 const Semver = require('semver')
 const debug = require('debug')('apmjs:tree-node')
-const error = require('../utils/error.js')
 const Version = require('./version.js')
 const npm = require('../utils/npm.js')
 const _ = require('lodash')
@@ -53,11 +52,11 @@ TreeNode.prototype.addDependency = function (name, semver) {
     .getPackageMeta(name, this.pkg)
     .then(info => {
       semver = semver || this.dependencies[name] || Version.derive(info)
-      var latestPackage = this.latestPackage(info, semver)
+      var latestPackage = Package.latestPackage(info, semver, `required by ${this}`)
       var node = TreeNode.nodes[name]
 
       if (node) {
-        node.checkComformance(latestPackage, semver, this)
+        node.checkConformance(latestPackage, semver, this)
         node.upgradeIfNeeded(latestPackage)
       } else {
         node = new TreeNode(latestPackage, semver)
@@ -85,11 +84,12 @@ TreeNode.prototype.prune = function () {
   _.forEach(isolated, name => this.children[name].remove(this))
 }
 
-TreeNode.prototype.checkComformance = function (pkg, semver, parent) {
+TreeNode.prototype.checkConformance = function (pkg, semver, parent) {
   debug('checking comformance between', `${pkg.name}@${pkg.version} and ${this}`)
   if (this.version === pkg.version) {
     return
   }
+  // erro promotion goes here, one by one...
   var p = _.sample(this.parents)
   var installed = {
     version: this.version,
@@ -111,20 +111,6 @@ TreeNode.prototype.populateChildren = function () {
     // no need to pass version, since this.<dep>.version will be the default
     .each(dependencies, name => this.addDependency(name))
     .then(() => this)
-}
-
-TreeNode.prototype.latestPackage = function (info, semver) {
-  var name = info.name
-  var maxSatisfiying = Package.maxSatisfying(info.versions, semver)
-
-  if (!maxSatisfiying) {
-    var msg = this
-      ? `${name}@${semver} not available, required by ${this}`
-      : 'empty versions for the root, at least one required'
-    throw new error.UnmetDependency(msg)
-  }
-
-  return maxSatisfiying
 }
 
 TreeNode.prototype.toString = function () {
