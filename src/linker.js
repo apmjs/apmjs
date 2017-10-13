@@ -16,8 +16,9 @@ function linkCurrent () {
   .spread(pkg => {
     var link = path.resolve(npm.globalDir, pkg.name)
     var file = pkg.pathname
-    console.log(`${link} -> ${file}`)
-    return fs.ensureSymlink(file, link)
+    return fs.remove(link)
+      .then(() => fs.ensureSymlink(file, link))
+      .then(() => console.log(`${link} -> ${file}`))
   })
 }
 
@@ -41,9 +42,10 @@ function linkDependency (decl) {
     ])
     .spread((pkg, dir) => {
       var link = path.resolve(dir, pkgDescriptor.name)
-      var target = pkg.pathname
-      console.log(`${link} -> ${target}`)
-      return fs.ensureSymlink(target, link)
+      var file = pkg.pathname
+      return fs.remove(link)
+        .then(() => fs.ensureSymlink(file, link))
+        .then(() => console.log(`${link} -> ${file}`))
     })
 }
 
