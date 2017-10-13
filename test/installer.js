@@ -59,7 +59,7 @@ describe('Installer', function () {
       })
     })
     it('should install maxSatisfying', function () {
-      return Installer.globalInstall('foo@1.0.*').then(function () {
+      return Installer.globalInstall('foo', '1.0.x').then(function () {
         expect(Installer.prototype.installPackage).to.have.been.calledOnce
         var args = Installer.prototype.installPackage.args[0]
         expect(args[0]).to.have.property('name', 'baz')
