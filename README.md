@@ -8,7 +8,7 @@ APM (AMD Package Manager) is a npm-based package manager for AMD.
 
 ## Installation
 
-If your node version >= 6.4.0, feel free to install.
+If your node version >= 4.7.0, feel free to install.
 ```
 $ [sudo] npm install -g apmjs
 ```
