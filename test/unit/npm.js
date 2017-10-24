@@ -1,14 +1,14 @@
 const fs = require('fs-extra')
 const os = require('os')
-const error = require('../src/utils/error.js')
+const error = require('../../src/utils/error.js')
 const path = require('path')
 const debug = require('debug')('apmjs:test:npm')
-const npm = require('../src/utils/npm.js')
+const npm = require('../../src/utils/npm.js')
 const chai = require('chai')
 const expect = chai.expect
 const nock = require('nock')
-const fooInfo = require('./stub/foo.info.json')
-const fooTgz = path.resolve(__dirname, './stub/foo-1.0.0.tgz')
+const fooInfo = require('../stub/foo.info.json')
+const fooTgz = path.resolve(__dirname, '../stub/foo-1.0.0.tgz')
 chai.use(require('chai-as-promised'))
 
 describe('npm', function () {

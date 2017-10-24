@@ -1,4 +1,4 @@
-const findUp = require('../src/utils/fs.js').findUp
+const findUp = require('../../src/utils/fs.js').findUp
 const chai = require('chai')
 const expect = chai.expect
 const mock = require('mock-fs')

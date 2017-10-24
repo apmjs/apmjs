@@ -1,18 +1,18 @@
 const chai = require('chai')
 const expect = chai.expect
 const mock = require('mock-fs')
-const Installer = require('../src/installer.js')
-const npm = require('../src/utils/npm.js')
+const Installer = require('../../src/installer.js')
+const npm = require('../../src/utils/npm.js')
 const fs = require('fs-extra')
 const sinon = require('sinon')
-const Package = require('../src/package.js')
+const Package = require('../../src/package.js')
 const _ = require('lodash')
 chai.use(require('sinon-chai'))
 chai.use(require('chai-as-promised'))
 
 describe('Installer', function () {
   var inst
-  var fooDesc = require('./stub/foo.info.json').versions['1.0.0']
+  var fooDesc = require('../stub/foo.info.json').versions['1.0.0']
   var foo = new Package(fooDesc)
   var barDesc = _.chain(fooDesc).clone().set('name', 'bar').value()
   var bazDesc = _.chain(fooDesc).clone().set('name', 'baz').value()
@@ -24,7 +24,7 @@ describe('Installer', function () {
     sandbox.stub(npm, 'downloadPackage')
       .returns(Promise.resolve())
     sandbox.stub(npm, 'getPackageMeta')
-      .returns(Promise.resolve(require('./stub/baz.info.json')))
+      .returns(Promise.resolve(require('../stub/baz.info.json')))
 
     // FIXME cannot restore
     Object.defineProperty(npm, 'globalDir', {

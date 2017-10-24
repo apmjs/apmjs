@@ -3,12 +3,12 @@ const path = require('path')
 const fs = require('fs-extra')
 const expect = chai.expect
 const Promise = require('bluebird')
-const npm = require('../src/utils/npm.js')
+const npm = require('../../src/utils/npm.js')
 const _ = require('lodash')
-const error = require('../src/utils/error.js')
+const error = require('../../src/utils/error.js')
 const debug = require('debug')('apmjs:test:tree-node')
 const nock = require('nock')
-const TreeNode = require('../src/resolver/tree-node.js')
+const TreeNode = require('../../src/resolver/tree-node.js')
 chai.use(require('sinon-chai'))
 chai.use(require('chai-as-promised'))
 require('mocha-sinon')
@@ -19,7 +19,7 @@ describe('TreeNode', function () {
   before(() => {
     ['foo', 'bar', 'baz', 'baa', 'coo', 'laa', 'hoo', 'haa']
     .reduce((server, id) => {
-      var file = path.resolve(__dirname, `stub/${id}.info.json`)
+      var file = path.resolve(__dirname, `../stub/${id}.info.json`)
       return server.get(`/${id}`).reply(200, fs.readFileSync(file))
     }, nock('http://apm'))
     return npm.load({registry: 'http://apm'})

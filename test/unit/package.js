@@ -1,5 +1,5 @@
-const Package = require('../src/package.js')
-const meta = require('./stub/baz.info.json')
+const Package = require('../../src/package.js')
+const meta = require('../stub/baz.info.json')
 const fs = require('fs-extra')
 const chai = require('chai')
 const expect = chai.expect
