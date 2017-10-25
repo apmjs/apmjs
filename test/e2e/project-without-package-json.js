@@ -1,6 +1,7 @@
 const chai = require('chai')
-const Workspace = require('../stub/workspace')
 const expect = chai.expect
+const pkg = require('../../package.json')
+const Workspace = require('../stub/workspace')
 const Registry = require('../stub/registry.js')
 
 describe('fresh project without package.json', function () {
@@ -16,6 +17,15 @@ describe('fresh project without package.json', function () {
   })
   after(function () {
     return Promise.all([ws.destroy(), reg.stopServer()])
+  })
+
+  it('should print version', function () {
+    return ws.run('$APM version')
+    .then(result => {
+      console.log(result.stdout)
+      console.log(result.stderr)
+      expect(result.stdout).to.contain(pkg.version)
+    })
   })
 
   it('should install latest by default', function () {

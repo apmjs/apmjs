@@ -28,6 +28,11 @@ describe('npm', function () {
         'Location': '/foo/-/foo-1.0.0.tgz'
       })
     return npm.load({registry: 'http://apm'})
+    .then(() => {
+      var npm = require('npm')
+      npm.config.set('@baidu:registry', 'http://apm')
+      npm.config.set('registry', 'http://apm')
+    })
   })
   after(() => nock.cleanAll())
 
@@ -49,7 +54,7 @@ describe('npm', function () {
     it('should get scoped package name', function () {
       return npm.getPackageMeta('@baidu/foo')
         .then(info => {
-          expect(info).to.have.property('name', '@baidu/foo')
+          expect(info).to.have.property('name', 'foo')
         })
     })
     it('should throw on non-exist package', function () {

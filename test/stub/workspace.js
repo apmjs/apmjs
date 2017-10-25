@@ -25,13 +25,12 @@ Workspace.prototype.create = function () {
     this.mountpoint = mount
     this.dirpath = path.join(mount, 'root')
     console.log('ramdisk created in', mount)
+    return fs.mkdir(this.dirpath)
   })
 }
 
 Workspace.prototype.createTree = function (root) {
-  return fs
-    .emptyDir(this.dirpath)
-    .then(() => createTree(this.dirpath, root))
+  return createTree(this.dirpath, root)
 }
 
 Workspace.prototype.readJson = function (filename) {
@@ -46,12 +45,14 @@ Workspace.prototype.readJsonSync = function (filename) {
 
 Workspace.prototype.run = function (cmd) {
   const registry = `http://localhost:${this.port}`
-  const bin = `node ${this.apmbin} --loglevel verbose --registry ${registry}`
+  const bin = `node ${this.apmbin} --registry ${registry}`
+  var cmd = `cd ${this.dirpath} && export APM="${bin}" && ${cmd}`
+  console.log('cmd:', cmd)
   return new Promise((resolve, reject) => {
     exec(
-      `cd ${this.dirpath} && export APM="${bin}" && ${cmd}`,
-      (err, stdout, stderr) => err ? reject(err) : resolve({ stdout, stderr }
-    ))
+      cmd,
+      (err, stdout, stderr) => err ? reject(err) : resolve({ stdout, stderr })
+    )
   })
 }
 

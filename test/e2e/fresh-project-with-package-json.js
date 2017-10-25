@@ -25,7 +25,7 @@ describe('fresh project with package.json', function () {
         amdDependencies: { foo: '^1.0.0' }
       })
     })
-    .then(() => ws.run('$APM install'))
+    .then(() => ws.run('$APM install --loglevel info'))
     .then(result => {
       expect(result.stderr).to.contain('npm info ok')
       return ws.readJson(`amd_modules/foo/package.json`)
