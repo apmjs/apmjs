@@ -1,0 +1,15 @@
+{
+  "name": "coo",
+  "versions": {
+    "1.0.0": {
+      "name": "coo",
+      "version": "1.0.0",
+      "amdDependencies": {
+        "bar": "<=1.0.0"
+      },
+      "dist": {
+        "tarball": "http://apmjs.com/coo/-/coo-1.0.0.tgz"
+      }
+    }
+  }
+}

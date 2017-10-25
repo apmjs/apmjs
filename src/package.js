@@ -123,7 +123,7 @@ Package.prototype.relativeModuleId = function () {
 }
 
 Package.prototype.toString = function () {
-  return this.name + '@' + this.version
+  return this.version ? this.name + '@' + this.version : this.name
 }
 
 Package.maxSatisfying = function (versionMap, semver) {

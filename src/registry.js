@@ -1,4 +1,5 @@
 const defaults = require('npm/lib/config/defaults.js').defaults
+const log = require('npmlog')
 const _ = require('lodash')
 const debug = require('debug')('apmjs:registry')
 const url = require('url')
@@ -13,17 +14,11 @@ function packageUrl (name) {
 }
 
 function getRegistry (name) {
-  var cliConfig = npm.config.list[0]
-  var userConfig = _.assign({}, defaults, npm.config.list[3])
-
-  if (_.has(cliConfig, 'registry')) {
-    return cliConfig.registry
-  }
-
   var scope = parseScope(name)
-  return scope
-    ? (userConfig[`${scope}:registry`] || userConfig.registry)
-    : userConfig.registry
+  var configKey = scope ? `${scope}:registry` : 'registry'
+  var registry = npm.config.get(configKey)
+  log.verbose('using registry:', registry)
+  return registry
 }
 
 function parseScope (name) {

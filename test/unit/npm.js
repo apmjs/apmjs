@@ -46,10 +46,10 @@ describe('npm', function () {
           })
         })
     })
-    it('should encode package name', function () {
+    it('should get scoped package name', function () {
       return npm.getPackageMeta('@baidu/foo')
         .then(info => {
-          expect(info).to.have.property('name', 'foo')
+          expect(info).to.have.property('name', '@baidu/foo')
         })
     })
     it('should throw on non-exist package', function () {

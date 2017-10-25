@@ -1,4 +1,5 @@
 const debug = require('debug')('apmjs:commands:install')
+const process = require('process')
 const version = require('../resolver/version.js')
 const _ = require('lodash')
 const Promise = require('bluebird')
@@ -18,6 +19,12 @@ function apmInstall (dependencies, conf) {
   var rootNode
   var installer = new Installer()
   return Package.load()
+    .catch(err => {
+      if (err.code === 'ENOENT') {
+        return new Package({name: 'root'}, process.cwd())
+      }
+      throw err
+    })
     .then(pkg => resolver.loadRoot(rootPkg = pkg))
     .then(node => {
       rootNode = node

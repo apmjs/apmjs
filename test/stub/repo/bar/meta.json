@@ -1,0 +1,29 @@
+{
+  "name": "bar",
+  "versions": {
+    "1.0.0": {
+      "name": "bar",
+      "version": "1.0.0",
+      "amdDependencies": {},
+      "dist": {
+        "tarball": "http://apmjs.com/bar/-/bar-1.0.0.tgz"
+      }
+    },
+    "1.0.1": {
+      "name": "bar",
+      "version": "1.0.1",
+      "amdDependencies": {},
+      "dist": {
+        "tarball": "http://apmjs.com/bar/-/bar-1.0.1.tgz"
+      }
+    },
+    "1.1.0": {
+      "name": "bar",
+      "version": "1.1.0",
+      "amdDependencies": {},
+      "dist": {
+        "tarball": "http://apmjs.com/bar/-/bar-1.1.0.tgz"
+      }
+    }
+  }
+}

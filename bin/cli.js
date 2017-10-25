@@ -28,13 +28,16 @@
   var types = configDefs.types
   var nopt = require('nopt')
 
-  log.level = 'verbose'
+  log.pause()
+  log.info('it worked if it ends with', 'ok')
 
   // if npm is called as "npmg" or "npm_g", then
   // run in global mode.
   if (path.basename(process.argv[1]).slice(-1) === 'g') {
     process.argv.splice(1, 1, 'npm', '-g')
   }
+
+  log.verbose('cli', process.argv)
 
   var conf = nopt(types, shorthands)
   npm.argv = conf.argv.remain
@@ -66,6 +69,9 @@
   // this is how to use npm programmatically:
   conf._exit = true
   npm.load(conf, function (er) {
+    // this log is different from the one required by npm
+    log.level = npm.config.get('loglevel')
+    log.resume()
     if (er) return errorHandler(er)
 
     Object.defineProperties(npm.commands, {
@@ -80,6 +86,7 @@
       }
     })
 
+    log.verbose('command:', npm.command)
     npm.commands[npm.command](npm.argv, errorHandler, conf)
   })
 })()
