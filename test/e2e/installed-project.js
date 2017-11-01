@@ -120,7 +120,7 @@ describe('installed project with package.json and node_modules', function () {
         })
       })
       .tap(ws => (workspace = ws))
-      .then(ws => ws.run('$APM install bar@1.1.0 --save --loglevel info'))
+      .then(ws => ws.run('$APM install bar@~1.1.0 --save --loglevel info'))
     )
     it('should make install successful', function () {
       return workspace.readJson(`amd_modules/bar/package.json`).then(bar => {

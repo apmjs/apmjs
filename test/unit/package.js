@@ -4,7 +4,6 @@ const meta = require('../stub/baz.info.json')
 const fs = require('fs-extra')
 const chai = require('chai')
 const expect = chai.expect
-const sinon = require('sinon')
 const mock = require('mock-fs')
 chai.use(require('chai-as-promised'))
 chai.use(require('sinon-chai'))
@@ -17,10 +16,8 @@ var scoped = {'name': '@baidu/haa'}
 
 describe('package', function () {
   var pkg
-  var tmpPkg
   before(function () {
     pkg = new Package(foo, '/root/foo')
-    tmpPkg = new Package({name: 'tmp'})
   })
   beforeEach(() => mock({
     '/root/hoo/foo.js': 'FOO',
@@ -149,27 +146,6 @@ describe('package', function () {
     })
     it('should default dirname to ""', function () {
       return expect(pkg.distname('foo.js'))
-    })
-  })
-  describe('#saveDependencies()', function () {
-    beforeEach(() => sinon.stub(log, 'info'))
-    afterEach(() => log.info.restore())
-    it('should skip saving when package.json not exist', function () {
-      return tmpPkg.saveDependencies(true).then(() => {
-        expect(log.info).to.be.calledWith('package.json not exist, skip saving...')
-      })
-    })
-    it('should save dependencies to file', function () {
-      pkg.dependencies = { 'bar': '2.2.2' }
-      return pkg.saveDependencies(true)
-        .then(() => fs.readJson('/root/foo/package.json'))
-        .then(json => expect(json).to.deep.equal({
-          name: 'foo',
-          author: 'harttle',
-          amdDependencies: {
-            bar: '2.2.2'
-          }
-        }))
     })
   })
   describe('.normalizeAMDPath()', function () {

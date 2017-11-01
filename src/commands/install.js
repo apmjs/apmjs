@@ -9,15 +9,16 @@ const Package = require('../package.js')
 
 function install (dependencies, errorHandler, conf) {
   var installer = new Installer()
-  return Package.loadOrCreate().then(pkg => {
-    return resolver.loadRoot(pkg).then(node => {
+  return Package.loadOrCreate()
+    .then(pkg => resolver.loadRoot(pkg))
+    .then(root => {
       return Promise.map(dependencies, decl => {
         var ret = version.parseDependencyDeclaration(decl)
-        return node.ensureDependency(ret.name, ret.semver)
+        return root.updateOrInstallDependency(ret.name, ret.semver)
       })
       .then(() => TreeNode.packageList())
       .then(pkgs => installer.install(pkgs))
-      .then(() => pkg.savePackages(conf))
+      .then(() => root.save(conf))
       .then(() => {
         if (_.size(dependencies)) {
           _.forEach(dependencies, decl => {
@@ -25,13 +26,12 @@ function install (dependencies, errorHandler, conf) {
             TreeNode.nodes[ret.name].printTree()
           })
         } else {
-          node.printTree()
+          root.printTree()
         }
       })
     })
-  })
-  .then(() => errorHandler())
-  .catch(err => errorHandler(err))
+    .then(() => errorHandler())
+    .catch(err => errorHandler(err))
 }
 
 module.exports = install

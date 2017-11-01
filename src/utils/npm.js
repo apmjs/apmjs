@@ -18,7 +18,7 @@ function downloadPackage (url, dir) {
   var untardir = path.join(os.tmpdir(), `${name}`)
   var pkgdir = path.join(untardir, 'package')
   // TODO: tarball cache
-  log.verbose('downloading', url)
+  log.http('tarball', url)
   return Promise.all([fs.remove(untardir), fs.remove(tarfile)])
     .then(() => new Promise((resolve, reject) => {
       var s = request({
@@ -53,7 +53,7 @@ function getPackageMeta (name, parent) {
     return metaCache[name]
   }
   var metaUrl = registry.packageUrl(name)
-  log.verbose('retrieving meta', metaUrl)
+  log.http('meta', metaUrl)
   metaCache[name] = rp({
     url: metaUrl,
     json: true

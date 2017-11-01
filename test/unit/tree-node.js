@@ -54,13 +54,6 @@ describe('TreeNode', function () {
         expect(parent.children.foo).to.have.property('name', 'foo')
       })
     })
-    it('should respect to dependencies field', function () {
-      var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.0.0'}})
-      return parent.addDependency('bar').then(bar => {
-        expect(bar.name).to.equal('bar')
-        expect(bar.version).to.equal('1.0.0')
-      })
-    })
     it('should take specified version over dependencies', function () {
       var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.0.1'}})
       return parent.addDependency('bar', '<=1.0.0').then(bar => {
@@ -73,25 +66,6 @@ describe('TreeNode', function () {
       return parent.addDependency('bar').then(bar => {
         expect(bar.name).to.equal('bar')
         expect(bar.version).to.equal('1.0.1')
-      })
-    })
-    it('should populate dependencies field if not listed', function () {
-      var parent = new TreeNode({name: 'parent', dependencies: {}})
-      return parent.addDependency('bar').then(() => {
-        expect(parent.dependencies).to.have.property('bar', '^1.0.1')
-      })
-    })
-    it('should resave dependency', function () {
-      var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.0.0'}})
-      return parent.addDependency('bar', '1.0.x').then(() => {
-        expect(parent.dependencies).to.deep.equal({ 'bar': '1.0.x' })
-      })
-    })
-    it("should update internal package's dependency", function () {
-      var pkg = {name: 'parent', dependencies: {'bar': '1.0.0'}}
-      var parent = new TreeNode(pkg)
-      return parent.addDependency('bar', '1.0.x').then(() => {
-        expect(pkg.dependencies).to.deep.equal({ 'bar': '1.0.x' })
       })
     })
     it('should not throw when creating the same', function () {
@@ -110,7 +84,7 @@ describe('TreeNode', function () {
     })
     it('should throw when not available', function () {
       var parent = new TreeNode({name: 'parent', dependencies: {'bar': '2.0.0'}})
-      return expect(parent.addDependency('bar'))
+      return expect(parent.addDependency('bar', '2.0.0'))
         .to.be.rejectedWith(
           error.UnmetDependency,
           /bar@2.0.0 not available, required by parent/

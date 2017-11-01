@@ -168,17 +168,12 @@ Package.prototype.setPathname = function (pathname) {
   return this
 }
 
-Package.prototype.savePackages = function (conf) {
-  var save = conf['save']
-  return Promise.all([this.saveDependencies(save), this.savePackageLocks()])
-}
-
-Package.prototype.savePackageLocks = function () {
+Package.prototype.saveLocks = function () {
   // TODO impl
   return Promise.resolve()
 }
 
-Package.prototype.saveDependencies = function (save) {
+Package.prototype.saveDependencies = function (nodes, save) {
   if (!this.descriptorPath) {
     log.info(SKIP_WRITING_MSG)
     return Promise.resolve()
@@ -186,17 +181,23 @@ Package.prototype.saveDependencies = function (save) {
   return fs
     .readJson(this.descriptorPath)
     .then(descriptor => {
-      descriptor.amdDependencies = descriptor.amdDependencies || {}
-      _.forOwn(this.dependencies, (semver, name) => {
-        if (save || _.has(descriptor.amdDependencies, name)) {
-          descriptor.amdDependencies[name] = semver
+      /**
+       * Whether or not to write amdDependencies?
+       *
+       * Save Option | Installed |  New
+       * ----------- | --------- | -----
+       *        save |    yes    |  yes
+       *     no-save |    yes    |  no
+       */
+      let deps = {}
+      _.forOwn(nodes, node => {
+        if (save || this.dependencies[node.name]) {
+          deps[node.name] = node.update
+            ? Version.versionToSave(node.version)
+            : this.dependencies[node.name]
         }
       })
-      _.forOwn(descriptor.amdDependencies, (semver, name) => {
-        if (!_.has(this.dependencies, name)) {
-          delete descriptor.amdDependencies[name]
-        }
-      })
+      descriptor.amdDependencies = deps
       return fs.writeJson(this.descriptorPath, descriptor, {spaces: 2})
     })
     .catch(e => {

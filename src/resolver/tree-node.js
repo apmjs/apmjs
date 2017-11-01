@@ -47,32 +47,31 @@ TreeNode.prototype.printTree = function () {
   console.log(str)
 }
 
-TreeNode.prototype.ensureDependency = function (name, semver) {
+TreeNode.prototype.updateOrInstallDependency = function (name, semver) {
   if (this.children[name]) {
     this.children[name].remove(this)
   }
-  let saveVersion = Version.versionToSave(semver)
-  return this.addDependency(name, semver, saveVersion)
+  return this.addDependency(name, semver, true)
 }
 
-TreeNode.prototype.addDependency = function (name, semver, saveVersion) {
+TreeNode.prototype.addDependency = function (name, semver, update) {
   log.silly(`addDependency: ${name}@${semver}`)
   return npm
     .getPackageMeta(name, this.pkg)
     .then(info => {
-      semver = semver || this.dependencies[name] || Version.derive(info)
+      semver = semver || Version.derive(info)
       log.silly('finding maxSatisfying for name:', name, 'semver:', semver)
       let target = Package.createMaxSatisfying(info, semver, `required by ${this}`)
       let installed = TreeNode.nodes[name]
 
       if (installed) {
         installed.checkConformance(target, semver, this)
-        this.appendChild(installed, semver, saveVersion)
+        this.appendChild(installed, semver, update)
         return installed.upgradeTo(target).then(() => installed)
       }
 
       let node = new TreeNode(target, semver)
-      this.appendChild(node, semver, saveVersion)
+      this.appendChild(node, semver, update)
       return node.populateChildren().then(() => node)
     })
 }
@@ -86,7 +85,7 @@ TreeNode.prototype.checkConformance = function (pkg, semver, parent) {
   let p = _.sample(this.parents)
   let installed = {
     version: this.version,
-    required: p ? p.dependencies[this.name] : '*',
+    required: p.pkg.dependencies[this.name],
     parent: p || 'ROOT'
   }
   let installing = {
@@ -108,19 +107,18 @@ TreeNode.prototype.upgradeTo = function (pkg) {
 
 TreeNode.prototype.prune = function () {
   let installed = _.keys(this.children)
-  let needed = _.keys(this.dependencies)
+  let needed = _.keys(this.pkg.dependencies)
   let isolated = _.difference(installed, needed)
   log.silly(`pruning isolated packages for ${this}`, isolated)
   _.forEach(isolated, name => this.children[name].remove(this))
 }
 
 TreeNode.prototype.populateChildren = function () {
-  let dependencies = _.keys(this.dependencies)
-  log.silly(`populating children ${dependencies} for ${this}`)
+  log.silly(`populating children ${_.keys(this.pkg.dependencies)} for ${this}`)
+
   return Promise
-    // no need to pass version, using this.<dep>.version
-    .each(dependencies, name => this.addDependency(name))
-    .then(() => this)
+  .all(_.map(this.pkg.dependencies, (semver, name) => this.addDependency(name, semver)))
+  .then(() => this)
 }
 
 TreeNode.prototype.toString = function () {
@@ -130,16 +128,25 @@ TreeNode.prototype.toString = function () {
 TreeNode.prototype.setPackage = function (pkg) {
   log.silly('setPackage', pkg.toString())
   this.pkg = pkg
-  this.dependencies = pkg.dependencies || {}
   this.version = pkg.version
 }
 
-TreeNode.prototype.appendChild = function (child, semver, saveVersion) {
+TreeNode.prototype.save = function (conf) {
+  var save = conf['save']
+  return Promise.all([
+    this.pkg.saveDependencies(this.children, save),
+    this.pkg.saveLocks(this.children)
+  ])
+}
+
+TreeNode.prototype.appendChild = function (child, semver, update) {
   log.silly('appendingChild', child.toString(), 'to', this.toString())
-  this.dependencies[child.name] = saveVersion || semver
+
   child.parents[this.name] = this
-  child.referenceCount++
   this.children[child.name] = child
+
+  child.referenceCount++
+  child.update = update
   return this
 }
 
