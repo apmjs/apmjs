@@ -15,7 +15,7 @@ function Installer (dirname) {
 Installer.globalInstall = function (name, semver) {
   var installer = new Installer(npm.globalDir)
   return npm.getPackageMeta(name)
-    .then(meta => Package.latestPackage(meta, semver))
+    .then(meta => Package.createMaxSatisfying(meta, semver))
     .then(pkg => installer.install(pkg).then(() => pkg))
 }
 

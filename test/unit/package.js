@@ -63,20 +63,20 @@ describe('package', function () {
       return expect(pkg.hasInstalled('/root')).to.eventually.equal(false)
     })
   })
-  describe('.latestPackage()', function () {
+  describe('.createMaxSatisfying()', function () {
     it('should respect tracing info on error message', function () {
-      return expect(Package.latestPackage(meta, '1.0.x'))
+      return expect(Package.createMaxSatisfying(meta, '1.0.x'))
         .to.have.property('version', '1.0.1')
     })
     it('should throw EUNMET if no version available', function () {
       function gn () {
-        return Package.latestPackage({name: 'foo'}, '1.0.x')
+        return Package.createMaxSatisfying({name: 'foo'}, '1.0.x')
       }
       expect(gn).to.throw('package foo@1.0.x not available')
     })
     it('should respect tracing info on error message', function () {
       function gn () {
-        return Package.latestPackage({name: 'foo'}, '1.0.x', 'required by a@2')
+        return Package.createMaxSatisfying({name: 'foo'}, '1.0.x', 'required by a@2')
       }
       expect(gn).to.throw('package foo@1.0.x not available, required by a@2')
     })
@@ -153,13 +153,13 @@ describe('package', function () {
     beforeEach(() => sinon.stub(console, 'warn'))
     afterEach(() => console.warn.restore())
     it('should skip saving when package.json not exist', function () {
-      return tmpPkg.saveDependencies().then(() => {
+      return tmpPkg.saveDependencies(true).then(() => {
         expect(console.warn).to.be.calledWith('package.json not exist, skip saving...')
       })
     })
     it('should save dependencies to file', function () {
       pkg.dependencies = { 'bar': '2.2.2' }
-      return pkg.saveDependencies()
+      return pkg.saveDependencies(true)
         .then(() => fs.readJson('/root/foo/package.json'))
         .then(json => expect(json).to.deep.equal({
           name: 'foo',

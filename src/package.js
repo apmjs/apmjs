@@ -1,4 +1,6 @@
 const assert = require('assert')
+const log = require('npmlog')
+const process = require('process')
 const error = require('./utils/error.js')
 const findUp = require('./utils/fs.js').findUp
 const _ = require('lodash')
@@ -31,16 +33,26 @@ Package.load = function (pathname) {
     .then(descriptor => new Package(descriptor, pathname))
 }
 
+Package.loadOrCreate = function (pathname) {
+  return Package.load(pathname)
+    .catch(err => {
+      if (err.code === 'ENOENT') {
+        return new Package({name: 'root'}, process.cwd())
+      }
+      throw err
+    })
+}
+
 /**
  * Get latest package object from meta info
  *
  * @param {String} [semver="*"] required semver
  * @param {String} [tracing=undefined] tracing info printed on error
  */
-Package.latestPackage = function (info, semver, tracing) {
+Package.createMaxSatisfying = function (info, semver, tracing) {
   semver = semver || '*'
   var name = info.name
-  var maxSatisfiying = Package.maxSatisfying(info.versions, semver)
+  var maxSatisfiying = Package.maxSatisfyingVersion(info.versions, semver)
 
   if (!maxSatisfiying) {
     var msg = `package ${name}@${semver} not available`
@@ -126,8 +138,8 @@ Package.prototype.toString = function () {
   return this.version ? this.name + '@' + this.version : this.name
 }
 
-Package.maxSatisfying = function (versionMap, semver) {
-  var descriptor = Version.maxSatisfying(versionMap, semver)
+Package.maxSatisfyingVersion = function (versionMap, semver) {
+  var descriptor = Version.maxSatisfyingDescriptor(versionMap, semver)
   return descriptor && new Package(descriptor)
 }
 
@@ -155,19 +167,48 @@ Package.prototype.setPathname = function (pathname) {
   return this
 }
 
-Package.prototype.saveDependencies = function () {
+Package.prototype.savePackages = function (conf) {
+  var save = conf['save']
+  return Promise.all([this.saveDependencies(save), this.savePackageLocks()])
+}
+
+Package.prototype.savePackageLocks = function () {
+  // TODO impl
+  return Promise.resolve()
+}
+
+Package.prototype.saveDependencies = function (save) {
   var file = this.descriptorPath
   if (!file) {
     console.warn('package.json not exist, skip saving...')
     return Promise.resolve()
   }
 
-  debug('saving dependencies to', file)
   return fs
     .readJson(file)
-    .then(pkg => {
-      pkg.amdDependencies = this.dependencies
-      return fs.writeJson(file, pkg, {spaces: 2})
+    .then(descriptor => {
+      log.error('saving dependencies')
+      console.log('file', file, 'dependencies', this.dependencies)
+
+      var deps = descriptor.amdDependencies
+      console.log('descriptor.amdDependencies', deps)
+      _.forOwn(this.dependencies, (semver, name) => {
+        if (save || deps[name]) {
+          deps[name] = semver
+        }
+      })
+      _.forOwn(deps, (semver, name) => {
+        if (!this.dependencies[name]) {
+          delete deps[name]
+        }
+      })
+      this.amdDependencies = deps
+      return fs.writeJson(file, descriptor, {spaces: 2})
+    })
+    .catch(e => {
+      if (e.code !== 'ENOENT') {
+        throw e
+      }
     })
 }
 
@@ -187,7 +228,7 @@ Package.prototype.distname = function (dirname) {
 }
 
 Package.prototype.toString = function () {
-  return this.name + '@' + this.version
+  return this.version ? this.name + '@' + this.version : this.name
 }
 
 module.exports = Package

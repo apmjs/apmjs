@@ -1,36 +1,29 @@
 const path = require('path')
+const log = require('npmlog')
+const process = require('process')
 const exec = require('child_process').exec
 const Promise = require('bluebird')
 const _ = require('lodash')
 const fs = require('fs-extra')
 const ramdisk = require('node-ramdisk')
+const testRoot = 'apmjs-test-root'
+const rMountpoint = /"(.*)" already mounted/
 
 function Workspace (port) {
   this.port = port
-  this.dirname = Math.random().toString(36).substr(2)
   this.apmbin = path.resolve(__dirname, '../../bin/cli.js')
 }
 
-Workspace.prototype.destroy = function () {
-  return Promise
-  .fromCallback(cb => this.disk.delete(this.mountpoint, cb))
-  .tap(() => console.log(`ramdisk ${this.mountpoint} destroyed`))
-}
-
-Workspace.prototype.create = function () {
-  this.disk = ramdisk(this.dirname)
-  // create a disk with 10MB of size
-  return Promise.fromCallback(cb => this.disk.create(10, cb))
-  .then(mount => {
-    this.mountpoint = mount
-    this.dirpath = path.join(mount, 'root')
-    console.log('ramdisk created in', mount)
-    return fs.mkdir(this.dirpath)
+Workspace.create = function (root) {
+  let port = process.env.REGISTRY_PORT || '8723'
+  let ws = new Workspace(port)
+  return createDisk()
+  .then(mountpoint => {
+    var dirname = Math.random().toString(36).substr(2)
+    ws.dirpath = path.join(mountpoint, dirname)
+    return fs.ensureDir(ws.dirpath).then(() => createTree(ws.dirpath, root))
   })
-}
-
-Workspace.prototype.createTree = function (root) {
-  return createTree(this.dirpath, root)
+  .then(() => ws)
 }
 
 Workspace.prototype.readJson = function (filename) {
@@ -46,13 +39,11 @@ Workspace.prototype.readJsonSync = function (filename) {
 Workspace.prototype.run = function (cmd) {
   const registry = `http://localhost:${this.port}`
   const bin = `node ${this.apmbin} --registry ${registry}`
-  var cmd = `cd ${this.dirpath} && export APM="${bin}" && ${cmd}`
-  console.log('cmd:', cmd)
+  cmd = `cd ${this.dirpath} && export APM="${bin}" && ${cmd}`
   return new Promise((resolve, reject) => {
-    exec(
-      cmd,
-      (err, stdout, stderr) => err ? reject(err) : resolve({ stdout, stderr })
-    )
+    exec(cmd, (err, stdout, stderr) => {
+      err ? reject(err) : resolve({ stdout, stderr })
+    })
   })
 }
 
@@ -67,7 +58,33 @@ function createTree (dirpath, root) {
 }
 
 function createFile (filepath, content) {
-  return fs.writeFile(filepath, content, 'utf8')
+  return fs.outputFile(filepath, content, 'utf8')
+}
+
+function createDisk () {
+  if (!Workspace.creating) {
+    Workspace.disk = ramdisk(testRoot)
+    Workspace.creating = Promise.fromCallback(cb => Workspace.disk.create(10, cb))
+    .catch(err => {
+      let match = rMountpoint.exec(err.message)
+      if (match) {
+        return match[1]
+      }
+      throw err
+    })
+    .tap(mountpoint => {
+      console.log('ramdisk created in', mountpoint)
+      Workspace.mountpoint = mountpoint
+      process.on('exit', unmountDisk)
+    })
+  }
+  return Workspace.creating
+}
+
+function unmountDisk () {
+  return Promise
+  .fromCallback(cb => Workspace.disk.delete(Workspace.mountpoint, cb))
+  .tap(() => console.log(`ramdisk ${Workspace.mountpoint} destroyed`))
 }
 
 module.exports = Workspace

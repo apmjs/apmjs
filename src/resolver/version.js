@@ -1,11 +1,33 @@
 const Semver = require('semver')
 const error = require('../utils/error.js')
 const _ = require('lodash')
+const rPlainVersion = /^\d/
 
-function maxSatisfying (versionMap, semver) {
+function maxSatisfying (info, semver, tracing) {
+  var versions = _.keys(info.versions)
+  var version = Semver.maxSatisfying(versions, semver)
+  if (version) {
+    return version
+  }
+
+  var msg = `package ${info.name}@${semver} not available`
+  if (tracing) {
+    msg += ', ' + tracing
+  }
+  throw new error.UnmetDependency(msg)
+}
+
+function maxSatisfyingDescriptor (versionMap, semver) {
   var versions = _.keys(versionMap)
   var version = Semver.maxSatisfying(versions, semver)
   return version ? versionMap[version] : null
+}
+
+function versionToSave (semver) {
+  if (rPlainVersion.test(semver)) {
+    return '^' + semver
+  }
+  return semver
 }
 
 function upgradeWarning (name, lhs, rhs) {
@@ -31,11 +53,11 @@ function parseDependencyDeclaration (decl) {
 function derive (info) {
   var lastVersion = _.chain(info.versions).keys().sort().last().value()
   if (!lastVersion) {
-    return '1.0.x'
+    return '^1.0.0'
   }
   return '^' + lastVersion
 }
 
 module.exports = {
-  upgradeWarning, maxSatisfying, derive, parseDependencyDeclaration
+  upgradeWarning, maxSatisfying, maxSatisfyingDescriptor, derive, parseDependencyDeclaration, versionToSave
 }

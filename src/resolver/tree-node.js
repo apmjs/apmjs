@@ -1,9 +1,10 @@
+'use strict'
 const Promise = require('bluebird')
 const assert = require('assert')
 const treePrinter = require('tree-printer')
 const Package = require('../package.js')
 const Semver = require('semver')
-const debug = require('debug')('apmjs:tree-node')
+const log = require('npmlog')
 const Version = require('./version.js')
 const npm = require('../utils/npm.js')
 const _ = require('lodash')
@@ -17,19 +18,19 @@ function TreeNode (pkg, required) {
   this.required = required || 'ROOT'
   this.setPackage(pkg)
   TreeNode.nodes[this.name] = this
-  debug(this.toString(), 'created')
+  log.silly(this.toString(), 'created')
 }
 
 TreeNode.nodes = {}
 TreeNode.referenceCounts = {}
 
 TreeNode.packageList = function () {
-  var notRoot = pkg => pkg.required !== 'ROOT'
+  let notRoot = pkg => pkg.required !== 'ROOT'
   return _.filter(TreeNode.nodes, notRoot).map(node => node.pkg)
 }
 
 TreeNode.prototype.toPlainTree = function () {
-  var obj = {
+  let obj = {
     name: this.toString(),
     children: _.map(this.children, child => child.toPlainTree())
   }
@@ -37,66 +38,58 @@ TreeNode.prototype.toPlainTree = function () {
 }
 
 TreeNode.prototype.printTree = function () {
-  var tree = this.toPlainTree()
-  var str = this.toString()
-  var children = treePrinter(tree.children, {format: {root: ''}}).trim()
+  let tree = this.toPlainTree()
+  let str = this.toString()
+  let children = treePrinter(tree.children, {format: {root: ''}}).trim()
   if (children) {
     str += '\n' + children
   }
   console.log(str)
 }
 
-TreeNode.prototype.addDependency = function (name, semver) {
-  debug('adding dependency', name)
+TreeNode.prototype.ensureDependency = function (name, semver) {
+  if (this.children[name]) {
+    this.children[name].remove(this)
+  }
+  let saveVersion = Version.versionToSave(semver)
+  return this.addDependency(name, semver, saveVersion)
+}
+
+TreeNode.prototype.addDependency = function (name, semver, saveVersion) {
+  log.silly(`addDependency: ${name}@${semver}`)
   return npm
     .getPackageMeta(name, this.pkg)
     .then(info => {
       semver = semver || this.dependencies[name] || Version.derive(info)
-      var latestPackage = Package.latestPackage(info, semver, `required by ${this}`)
-      var node = TreeNode.nodes[name]
+      log.silly('finding maxSatisfying for name:', name, 'semver:', semver)
+      let target = Package.createMaxSatisfying(info, semver, `required by ${this}`)
+      let installed = TreeNode.nodes[name]
 
-      if (node) {
-        node.checkConformance(latestPackage, semver, this)
-        node.upgradeIfNeeded(latestPackage)
-      } else {
-        node = new TreeNode(latestPackage, semver)
+      if (installed) {
+        installed.checkConformance(target, semver, this)
+        this.appendChild(installed, semver, saveVersion)
+        return installed.upgradeTo(target).then(() => installed)
       }
-      return node.populateChildren().then(() => {
-        this.appendChild(node, semver)
-        return node
-      })
+
+      let node = new TreeNode(target, semver)
+      this.appendChild(node, semver, saveVersion)
+      return node.populateChildren().then(() => node)
     })
 }
 
-TreeNode.prototype.upgradeIfNeeded = function (pkg) {
-  if (Semver.gte(this.version, pkg.version)) {
-    return
-  }
-  this.setPackage(pkg)
-  this.prune()
-}
-
-TreeNode.prototype.prune = function () {
-  var installed = _.keys(this.children)
-  var needed = _.keys(this.dependencies)
-  var isolated = _.difference(installed, needed)
-  debug(`pruning isolated packages for ${this}`, isolated)
-  _.forEach(isolated, name => this.children[name].remove(this))
-}
-
 TreeNode.prototype.checkConformance = function (pkg, semver, parent) {
-  debug('checking comformance between', `${pkg.name}@${pkg.version} and ${this}`)
+  log.silly('checking comformance between', `${pkg.name}@${pkg.version} and ${this}`)
   if (this.version === pkg.version) {
     return
   }
   // erro promotion goes here, one by one...
-  var p = _.sample(this.parents)
-  var installed = {
+  let p = _.sample(this.parents)
+  let installed = {
     version: this.version,
     required: p ? p.dependencies[this.name] : '*',
     parent: p || 'ROOT'
   }
-  var installing = {
+  let installing = {
     version: pkg.version,
     required: semver,
     parent: parent
@@ -104,11 +97,28 @@ TreeNode.prototype.checkConformance = function (pkg, semver, parent) {
   Version.upgradeWarning(this.name, installed, installing)
 }
 
+TreeNode.prototype.upgradeTo = function (pkg) {
+  if (Semver.gte(this.version, pkg.version)) {
+    return Promise.resolve()
+  }
+  this.setPackage(pkg)
+  this.prune()
+  return this.populateChildren()
+}
+
+TreeNode.prototype.prune = function () {
+  let installed = _.keys(this.children)
+  let needed = _.keys(this.dependencies)
+  let isolated = _.difference(installed, needed)
+  log.silly(`pruning isolated packages for ${this}`, isolated)
+  _.forEach(isolated, name => this.children[name].remove(this))
+}
+
 TreeNode.prototype.populateChildren = function () {
-  var dependencies = _.keys(this.dependencies)
-  debug(`populating children ${dependencies} for ${this}`)
+  let dependencies = _.keys(this.dependencies)
+  log.silly(`populating children ${dependencies} for ${this}`)
   return Promise
-    // no need to pass version, since this.<dep>.version will be the default
+    // no need to pass version, using this.<dep>.version
     .each(dependencies, name => this.addDependency(name))
     .then(() => this)
 }
@@ -118,15 +128,15 @@ TreeNode.prototype.toString = function () {
 }
 
 TreeNode.prototype.setPackage = function (pkg) {
-  debug('setPackage for', pkg.name, 'to', pkg.version)
+  log.silly('setPackage ', pkg.name, 'to version:', pkg.version)
   this.pkg = pkg
   this.dependencies = pkg.dependencies || {}
   this.version = pkg.version
 }
 
-TreeNode.prototype.appendChild = function (child, semver) {
-  debug('appendingChild', child.toString(), 'to', this.toString())
-  this.dependencies[child.name] = semver
+TreeNode.prototype.appendChild = function (child, semver, saveVersion) {
+  log.silly('appendingChild', child.toString(), 'to', this.toString())
+  this.dependencies[child.name] = saveVersion || semver
   child.parents[this.name] = this
   child.referenceCount++
   this.children[child.name] = child
@@ -134,7 +144,8 @@ TreeNode.prototype.appendChild = function (child, semver) {
 }
 
 TreeNode.prototype.remove = function (parent) {
-  debug('removing node', this.toString())
+  log.silly('removing node', this.toString())
+  // FIXME remove vs. destroy
   _.forEach(this.children, child => child.remove(this))
 
   delete this.parents[parent.name].children[this.name]

@@ -1,5 +1,4 @@
 const debug = require('debug')('apmjs:commands:install')
-const process = require('process')
 const version = require('../resolver/version.js')
 const _ = require('lodash')
 const Promise = require('bluebird')
@@ -9,43 +8,30 @@ const TreeNode = require('../resolver/tree-node.js')
 const Package = require('../package.js')
 
 function install (dependencies, errorHandler, conf) {
-  return apmInstall(dependencies, conf)
-  .then(() => errorHandler())
-  .catch(err => errorHandler(err))
-}
-
-function apmInstall (dependencies, conf) {
-  var rootPkg
-  var rootNode
   var installer = new Installer()
-  return Package.load()
-    .catch(err => {
-      if (err.code === 'ENOENT') {
-        return new Package({name: 'root'}, process.cwd())
-      }
-      throw err
-    })
-    .then(pkg => resolver.loadRoot(rootPkg = pkg))
-    .then(node => {
-      rootNode = node
+  return Package.loadOrCreate().then(pkg => {
+    return resolver.loadRoot(pkg).then(node => {
       return Promise.map(dependencies, decl => {
         var ret = version.parseDependencyDeclaration(decl)
-        return node.addDependency(ret.name, ret.semver)
+        return node.ensureDependency(ret.name, ret.semver)
+      })
+      .then(() => TreeNode.packageList())
+      .then(pkgs => installer.install(pkgs))
+      .then(() => pkg.savePackages(conf))
+      .then(() => {
+        if (_.size(dependencies)) {
+          _.forEach(dependencies, decl => {
+            var ret = version.parseDependencyDeclaration(decl)
+            TreeNode.nodes[ret.name].printTree()
+          })
+        } else {
+          node.printTree()
+        }
       })
     })
-    .then(() => TreeNode.packageList())
-    .then(pkgs => installer.install(pkgs))
-    .then(() => conf['save'] ? rootPkg.saveDependencies() : '')
-    .then(() => {
-      if (_.size(dependencies)) {
-        _.forEach(dependencies, decl => {
-          var ret = version.parseDependencyDeclaration(decl)
-          TreeNode.nodes[ret.name].printTree()
-        })
-      } else {
-        rootNode.printTree()
-      }
-    })
+  })
+  .then(() => errorHandler())
+  .catch(err => errorHandler(err))
 }
 
 module.exports = install

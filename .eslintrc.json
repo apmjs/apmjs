@@ -9,6 +9,6 @@
     "promise"
   ],
   "rules": {
-    "no-unused-vars": ["error", { "varsIgnorePattern": "debug" }]
+    "no-unused-vars": ["error", { "varsIgnorePattern": "log|debug" }]
   }
 }
