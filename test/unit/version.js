@@ -1,8 +1,11 @@
 const chai = require('chai')
+const log = require('npmlog')
+const sinon = require('sinon')
 const error = require('../../src/utils/error.js')
 const expect = chai.expect
 const debug = require('debug')('apmjs:test:version')
 const Version = require('../../src/resolver/version.js')
+chai.use(require('sinon-chai'))
 
 describe('Version', function () {
   this.timeout(1000)
@@ -47,15 +50,11 @@ describe('Version', function () {
       })
     })
   })
-  describe('.upgradeWarning()', function () {
-    beforeEach(function () {
-      this.sinon.stub(console, 'warn')
-    })
-    afterEach(function () {
-      console.warn.restore()
-    })
+  describe('.conflictError()', function () {
+    beforeEach(() => sinon.stub(log, 'error'))
+    afterEach(() => log.error.restore())
     it('should warn to upgrade former packages', function () {
-      Version.upgradeWarning('bar', {
+      Version.conflictError('bar', {
         version: '1.0.1',
         required: '1.0.1',
         parent: 'parent1@2.0.0'
@@ -64,12 +63,12 @@ describe('Version', function () {
         required: '1.0.0',
         parent: 'parent2'
       })
-      var msg = 'WARN: multi versions of bar, upgrade bar@1.0.0 (in parent2) to match 1.0.1 (as required by parent1@2.0.0)'
-      expect(console.warn.args[0][0]).to.equal(msg)
+      var msg = 'version conflict: upgrade bar@1.0.0 (in parent2) to match 1.0.1 (as required by parent1@2.0.0)'
+      expect(log.error.args[0][0]).to.equal(msg)
     })
 
     it('should warn to upgrade latter packages', function () {
-      Version.upgradeWarning('bar', {
+      Version.conflictError('bar', {
         required: '1.0.1',
         version: '1.0.1',
         parent: 'parent1@2.0.0'
@@ -78,8 +77,8 @@ describe('Version', function () {
         required: '1.0.0',
         parent: 'parent2'
       })
-      var msg = 'WARN: multi versions of bar, upgrade bar@1.0.0 (in parent2) to match 1.0.1 (as required by parent1@2.0.0)'
-      expect(console.warn.args[0][0]).to.equal(msg)
+      var msg = 'version conflict: upgrade bar@1.0.0 (in parent2) to match 1.0.1 (as required by parent1@2.0.0)'
+      expect(log.error.args[0][0]).to.equal(msg)
     })
   })
 })

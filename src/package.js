@@ -187,11 +187,7 @@ Package.prototype.saveDependencies = function (save) {
   return fs
     .readJson(file)
     .then(descriptor => {
-      log.error('saving dependencies')
-      console.log('file', file, 'dependencies', this.dependencies)
-
       var deps = descriptor.amdDependencies
-      console.log('descriptor.amdDependencies', deps)
       _.forOwn(this.dependencies, (semver, name) => {
         if (save || deps[name]) {
           deps[name] = semver

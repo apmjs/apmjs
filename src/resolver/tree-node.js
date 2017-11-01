@@ -94,7 +94,7 @@ TreeNode.prototype.checkConformance = function (pkg, semver, parent) {
     required: semver,
     parent: parent
   }
-  Version.upgradeWarning(this.name, installed, installing)
+  Version.conflictError(this.name, installed, installing)
 }
 
 TreeNode.prototype.upgradeTo = function (pkg) {
@@ -128,7 +128,7 @@ TreeNode.prototype.toString = function () {
 }
 
 TreeNode.prototype.setPackage = function (pkg) {
-  log.silly('setPackage ', pkg.name, 'to version:', pkg.version)
+  log.silly('setPackage', pkg.toString())
   this.pkg = pkg
   this.dependencies = pkg.dependencies || {}
   this.version = pkg.version

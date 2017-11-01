@@ -1,4 +1,6 @@
 const chai = require('chai')
+const sinon = require('sinon')
+const log = require('npmlog')
 const path = require('path')
 const fs = require('fs-extra')
 const expect = chai.expect
@@ -149,12 +151,12 @@ describe('TreeNode', function () {
     })
   })
   describe('dependency trees', function () {
-    beforeEach(function () {
-      this.sinon.stub(console, 'warn')
-      this.sinon.stub(console, 'log')
+    beforeEach(() => {
+      sinon.stub(log, 'error')
+      sinon.stub(console, 'log')
     })
-    afterEach(function () {
-      console.warn.restore()
+    afterEach(() => {
+      log.error.restore()
       console.log.restore()
     })
     it('should install latest available', function () {
@@ -202,9 +204,9 @@ describe('TreeNode', function () {
         dependencies: { bar: '1.0.0', coo: '1.0.x' }
       })
       return root.populateChildren().then(() => {
-        var msg = 'WARN: multi versions of bar, upgrade bar@1.0.0 (in root@1.0.0) to match 1.0.1 (as required by coo@1.0.1)'
-        expect(console.warn).to.have.been.called
-        expect(console.warn.args[0][0]).to.equal(msg)
+        var msg = 'version conflict: upgrade bar@1.0.0 (in root@1.0.0) to match 1.0.1 (as required by coo@1.0.1)'
+        expect(log.error).to.have.been.called
+        expect(log.error.args[0][0]).to.equal(msg)
       })
     })
     it('should warn to upgrade latter packages', function () {
@@ -214,9 +216,9 @@ describe('TreeNode', function () {
         dependencies: { bar: '1.0.x', laa: '1.0.0' }
       })
       return root.populateChildren().then(() => {
-        var msg = 'WARN: multi versions of bar, upgrade bar@1.0.0 (in laa@1.0.0) to match 1.0.x (as required by root@0.0.1)'
-        expect(console.warn).to.have.been.called
-        expect(console.warn.args[0][0]).to.equal(msg)
+        var msg = 'version conflict: upgrade bar@1.0.0 (in laa@1.0.0) to match 1.0.x (as required by root@0.0.1)'
+        expect(log.error).to.have.been.called
+        expect(log.error.args[0][0]).to.equal(msg)
       })
     })
   })

@@ -42,6 +42,8 @@ Workspace.prototype.run = function (cmd) {
   cmd = `cd ${this.dirpath} && export APM="${bin}" && ${cmd}`
   return new Promise((resolve, reject) => {
     exec(cmd, (err, stdout, stderr) => {
+      console.log('stdout', stdout)
+      console.warn('stderr', stderr)
       err ? reject(err) : resolve({ stdout, stderr })
     })
   })

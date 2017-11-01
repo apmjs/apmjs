@@ -1,4 +1,5 @@
 const Semver = require('semver')
+const log = require('npmlog')
 const error = require('../utils/error.js')
 const _ = require('lodash')
 const rPlainVersion = /^\d/
@@ -30,13 +31,13 @@ function versionToSave (semver) {
   return semver
 }
 
-function upgradeWarning (name, lhs, rhs) {
+function conflictError (name, lhs, rhs) {
   var greater = Semver.gt(lhs.version, rhs.version) ? lhs : rhs
   var less = lhs === greater ? rhs : lhs
-  var msg = `WARN: multi versions of ${name}, ` +
+  var msg = `version conflict: ` +
     `upgrade ${name}@${less.required} (in ${less.parent}) to match ` +
     `${greater.required} (as required by ${greater.parent})`
-  console.warn(msg)
+  log.error(msg)
 }
 
 function parseDependencyDeclaration (decl) {
@@ -59,5 +60,5 @@ function derive (info) {
 }
 
 module.exports = {
-  upgradeWarning, maxSatisfying, maxSatisfyingDescriptor, derive, parseDependencyDeclaration, versionToSave
+  conflictError, maxSatisfying, maxSatisfyingDescriptor, derive, parseDependencyDeclaration, versionToSave
 }
