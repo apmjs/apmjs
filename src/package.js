@@ -10,6 +10,7 @@ const debug = require('debug')('apmjs:package')
 const changeCase = require('change-case')
 const path = require('path')
 const Promise = require('bluebird')
+const SKIP_WRITING_MSG = 'package.json not exist, skip saving...'
 
 function Package (descriptor, pathname) {
   assert(descriptor.name, 'package name not defined for ' + pathname)
@@ -111,7 +112,7 @@ Package.prototype.respectBrowser = function () {
     }
     var replacerPath = path.resolve(this.pathname, replacer)
     return fs.move(replacerPath, targetPath, {overwrite: true}).catch(e => {
-      console.warn(`failed to mv ${replacer} to ${target}: ${e.message}`)
+      log.warn(`failed to mv ${replacer} to ${target}: ${e.message}`)
     })
   })
 }
@@ -178,33 +179,31 @@ Package.prototype.savePackageLocks = function () {
 }
 
 Package.prototype.saveDependencies = function (save) {
-  var file = this.descriptorPath
-  if (!file) {
-    console.warn('package.json not exist, skip saving...')
+  if (!this.descriptorPath) {
+    log.info(SKIP_WRITING_MSG)
     return Promise.resolve()
   }
-
   return fs
-    .readJson(file)
+    .readJson(this.descriptorPath)
     .then(descriptor => {
-      var deps = descriptor.amdDependencies
+      descriptor.amdDependencies = descriptor.amdDependencies || {}
       _.forOwn(this.dependencies, (semver, name) => {
-        if (save || deps[name]) {
-          deps[name] = semver
+        if (save || _.has(descriptor.amdDependencies, name)) {
+          descriptor.amdDependencies[name] = semver
         }
       })
-      _.forOwn(deps, (semver, name) => {
-        if (!this.dependencies[name]) {
-          delete deps[name]
+      _.forOwn(descriptor.amdDependencies, (semver, name) => {
+        if (!_.has(this.dependencies, name)) {
+          delete descriptor.amdDependencies[name]
         }
       })
-      this.amdDependencies = deps
-      return fs.writeJson(file, descriptor, {spaces: 2})
+      return fs.writeJson(this.descriptorPath, descriptor, {spaces: 2})
     })
     .catch(e => {
       if (e.code !== 'ENOENT') {
         throw e
       }
+      log.info(SKIP_WRITING_MSG)
     })
 }
 

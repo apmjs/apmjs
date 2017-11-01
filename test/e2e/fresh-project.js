@@ -8,6 +8,37 @@ describe('fresh project with package.json', function () {
   before(cb => registry.startServer(cb))
   after(cb => registry.stopServer(cb))
 
+  describe('package.json without amdDependencies', function () {
+    it('should install a package', function () {
+      return Workspace.create({'package.json': JSON.stringify({ name: 'main' })})
+        .then(ws => ws
+          .run('$APM install bar')
+          .then(() => ws.readJson(`amd_modules/bar/package.json`))
+          .then(foo => {
+            expect(foo).to.have.property('name', 'bar')
+            expect(foo).to.have.property('version', '1.1.0')
+          })
+       )
+    })
+
+    it('should install and save a package', function () {
+      return Workspace.create({'package.json': JSON.stringify({ name: 'main' })})
+        .then(ws => ws
+          .run('$APM install bar --save')
+          .then(() => ws.readJson(`amd_modules/bar/package.json`))
+          .then(foo => {
+            expect(foo).to.have.property('name', 'bar')
+            expect(foo).to.have.property('version', '1.1.0')
+          })
+          .then(() => ws.readJson(`package.json`))
+          .then(pkg => {
+            console.log(pkg)
+            expect(pkg.amdDependencies).to.have.property('bar', '^1.1.0')
+          })
+       )
+    })
+  })
+
   it('should install a single package', function () {
     return Workspace.create({
       'package.json': JSON.stringify({

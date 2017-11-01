@@ -1,4 +1,5 @@
 const Package = require('../../src/package.js')
+const log = require('npmlog')
 const meta = require('../stub/baz.info.json')
 const fs = require('fs-extra')
 const chai = require('chai')
@@ -6,6 +7,7 @@ const expect = chai.expect
 const sinon = require('sinon')
 const mock = require('mock-fs')
 chai.use(require('chai-as-promised'))
+chai.use(require('sinon-chai'))
 
 var foo = {'name': 'foo', 'version': '1.2.3'}
 var bar = {'main': './a.js', 'name': 'bar'}
@@ -150,11 +152,11 @@ describe('package', function () {
     })
   })
   describe('#saveDependencies()', function () {
-    beforeEach(() => sinon.stub(console, 'warn'))
-    afterEach(() => console.warn.restore())
+    beforeEach(() => sinon.stub(log, 'info'))
+    afterEach(() => log.info.restore())
     it('should skip saving when package.json not exist', function () {
       return tmpPkg.saveDependencies(true).then(() => {
-        expect(console.warn).to.be.calledWith('package.json not exist, skip saving...')
+        expect(log.info).to.be.calledWith('package.json not exist, skip saving...')
       })
     })
     it('should save dependencies to file', function () {

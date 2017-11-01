@@ -47,7 +47,7 @@ function parseDependencyDeclaration (decl) {
   }
   return {
     name: match[1],
-    semver: match[2] ? match[2].slice(1) : '*'
+    semver: match[2] ? match[2].slice(1) : ''
   }
 }
 

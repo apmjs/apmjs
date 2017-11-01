@@ -46,7 +46,7 @@ describe('Version', function () {
     it('should parse as * when given only name', function () {
       expect(Version.parseDependencyDeclaration('foo')).to.deep.equal({
         name: 'foo',
-        semver: '*'
+        semver: ''
       })
     })
   })
