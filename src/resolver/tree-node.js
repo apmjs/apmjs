@@ -143,17 +143,19 @@ TreeNode.prototype.appendChild = function (child, semver, saveVersion) {
   return this
 }
 
-TreeNode.prototype.remove = function (parent) {
-  log.silly('removing node', this.toString())
-  // FIXME remove vs. destroy
+TreeNode.prototype.destroy = function () {
+  log.silly('destroying node', this.toString())
   _.forEach(this.children, child => child.remove(this))
+  delete TreeNode.nodes[this.name]
+}
 
+TreeNode.prototype.remove = function (parent) {
   delete this.parents[parent.name].children[this.name]
   delete this.parents[parent.name]
 
   this.referenceCount--
   if (this.referenceCount <= 0) {
-    delete TreeNode.nodes[this.name]
+    this.destroy()
   }
 }
 
