@@ -43,11 +43,11 @@ Workspace.prototype.run = function (cmd) {
   const bin = `node ${this.apmbin} --registry ${registry}`
   cmd = `cd ${this.dirpath} && export APM="${bin}" && ${cmd}`
   return new Promise((resolve, reject) => {
-    exec(cmd, (err, stdout, stderr) => {
-      console.log('stdout', stdout)
-      console.warn('stderr', stderr)
+    var child = exec(cmd, (err, stdout, stderr) => {
       err ? reject(err) : resolve({ stdout, stderr })
     })
+    child.stdout.pipe(process.stdout)
+    child.stderr.pipe(process.stderr)
   })
 }
 

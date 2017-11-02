@@ -80,16 +80,32 @@ function getPackageMeta (name, parent) {
 function load (conf) {
   let config = {}
   _.assign(config, conf)
-  return Promise.fromCallback(cb => npm.load(config, cb))
+  return Promise
+  .fromCallback(cb => npm.load(config, cb))
+  .tap(() => (log.level = 'silly'))
 }
 
 let npmDelegate = {downloadPackage, getPackageMeta, load}
 
 Object.defineProperties(npmDelegate, {
+  'dir': {
+    get: () => {
+      return path.resolve(npm.dir, '../amd_modules')
+    }
+  },
+  'prefix': {
+    get: () => {
+      return npm.prefix
+    }
+  },
+  'localPrefix': {
+    get: () => {
+      return npm.localPrefix
+    }
+  },
   'globalDir': {
     get: () => {
-      let p = path.resolve(npm.globalDir, '../amd_modules')
-      return p
+      return path.resolve(npm.globalDir, '../amd_modules')
     },
     configurable: true
   }

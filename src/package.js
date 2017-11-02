@@ -1,9 +1,10 @@
 'use strict'
+const findUp = require('../src/utils/fs.js').findUp
+const npm = require('./utils/npm')
 const assert = require('assert')
 const log = require('npmlog')
 const process = require('process')
 const error = require('./utils/error.js')
-const findUp = require('./utils/fs.js').findUp
 const _ = require('lodash')
 const Version = require('./resolver/version.js')
 const fs = require('fs-extra')
@@ -25,14 +26,20 @@ function Package (descriptor, pathname) {
   }
 }
 
-Package.load = function (pathname) {
-  return findUp('package.json', pathname)
-    .tap(file => {
-      debug('loading package from', file)
-      pathname = path.dirname(file)
-    })
+Package.loadModule = function (name) {
+  return Package.loadByPath(path.resolve(npm.dir, name))
+}
+
+Package.loadByPath = function (pathname) {
+  return Promise.resolve(path.resolve(pathname, 'package.json'))
     .then(file => fs.readJson(file))
     .then(descriptor => new Package(descriptor, pathname))
+}
+
+Package.load = function (pathname) {
+  return findUp('package.json', pathname)
+    .then(filepath => path.dirname(filepath))
+    .then(dirpath => Package.loadByPath(dirpath))
 }
 
 Package.loadOrCreate = function (pathname) {
@@ -54,7 +61,7 @@ Package.loadOrCreate = function (pathname) {
 Package.createMaxSatisfying = function (info, semver, tracing) {
   semver = semver || '*'
   var name = info.name
-  var maxSatisfiying = Package.maxSatisfyingVersion(info.versions, semver)
+  var maxSatisfiying = Package.maxSatisfying(info.versions, semver)
 
   if (!maxSatisfiying) {
     var msg = `package ${name}@${semver} not available`
@@ -140,7 +147,7 @@ Package.prototype.toString = function () {
   return this.version ? this.name + '@' + this.version : this.name
 }
 
-Package.maxSatisfyingVersion = function (versionMap, semver) {
+Package.maxSatisfying = function (versionMap, semver) {
   var descriptor = Version.maxSatisfyingDescriptor(versionMap, semver)
   return descriptor && new Package(descriptor)
 }

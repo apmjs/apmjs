@@ -4,43 +4,20 @@ const error = require('../utils/error.js')
 const _ = require('lodash')
 const rPlainVersion = /^\d/
 
-function maxSatisfying (info, semver, tracing) {
-  var versions = _.keys(info.versions)
-  var version = Semver.maxSatisfying(versions, semver)
-  if (version) {
-    return version
-  }
-
-  var msg = `package ${info.name}@${semver} not available`
-  if (tracing) {
-    msg += ', ' + tracing
-  }
-  throw new error.UnmetDependency(msg)
-}
-
-function maxSatisfyingDescriptor (versionMap, semver) {
+Semver.maxSatisfyingDescriptor = function (versionMap, semver) {
   var versions = _.keys(versionMap)
   var version = Semver.maxSatisfying(versions, semver)
   return version ? versionMap[version] : null
 }
 
-function versionToSave (semver) {
+Semver.versionToSave = function (semver) {
   if (rPlainVersion.test(semver)) {
     return '^' + semver
   }
   return semver
 }
 
-function conflictError (name, lhs, rhs) {
-  var greater = Semver.gt(lhs.version, rhs.version) ? lhs : rhs
-  var less = lhs === greater ? rhs : lhs
-  var msg = `version conflict: ` +
-    `upgrade ${name}@${less.required} (in ${less.parent}) to match ` +
-    `${greater.required} (as required by ${greater.parent})`
-  log.error(msg)
-}
-
-function parseDependencyDeclaration (decl) {
+Semver.parseDependencyDeclaration = function (decl) {
   var match = /^((?:[@\w-]+\/)?[\w-.]+)(@.*)?$/.exec(decl)
   if (!match) {
     throw new error.InvalidPackageName(decl)
@@ -51,7 +28,7 @@ function parseDependencyDeclaration (decl) {
   }
 }
 
-function derive (info) {
+Semver.derive = function (info) {
   var lastVersion = _.chain(info.versions).keys().sort().last().value()
   if (!lastVersion) {
     return '^1.0.0'
@@ -59,6 +36,4 @@ function derive (info) {
   return '^' + lastVersion
 }
 
-module.exports = {
-  conflictError, maxSatisfying, maxSatisfyingDescriptor, derive, parseDependencyDeclaration, versionToSave
-}
+module.exports = Semver

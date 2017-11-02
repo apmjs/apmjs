@@ -17,12 +17,12 @@
 
   process.title = 'npm'
 
-  let pkg = require('../package.json')
-  let log = require('npmlog')
-  let path = require('path')
-  let npm = require('npm')
-  let npmconf = require('npm/lib/config/core.js')
-  let errorHandler = require('npm/lib/utils/error-handler.js')
+  const pkg = require('../package.json')
+  const log = require('npmlog')
+  const path = require('path')
+  const npm = require('npm')
+  const npmconf = require('npm/lib/config/core.js')
+  const errorHandler = require('npm/lib/utils/error-handler.js')
 
   let configDefs = npmconf.defs
   let shorthands = configDefs.shorthands

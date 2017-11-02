@@ -19,7 +19,7 @@ describe('linking', function () {
         })
       }
       return Workspace.create(tree).then(ws => ws
-        .run(`cd foo && $APM link --prefix ${ws.dirpath} --loglevel silly`)
+        .run(`cd foo && $APM link --prefix ${ws.dirpath}`)
         .then(result => {
           let msg = `${ws.dirpath}/lib/amd_modules/foo -> ${ws.dirpath}/foo`
           expect(result.stdout).to.include(msg)
@@ -55,7 +55,7 @@ describe('linking', function () {
         'foo/package.json': '{ "name": "foo" }'
       }
       return Workspace.create(tree).then(ws => ws
-        .run(`cd foo && $APM unlink --prefix ${ws.dirpath} --loglevel silly`)
+        .run(`cd foo && $APM unlink --prefix ${ws.dirpath}`)
         .then(result => expect(result.stdout).to.contain(`unlink ${ws.dirpath}/lib/amd_modules/foo`))
       )
     })
@@ -65,7 +65,7 @@ describe('linking', function () {
         'lib/amd_modules/foo/package.json': '{"name": "bar", "version": "1.2.3"}'
       }
       return Workspace.create(tree).then(ws => ws
-        .run(`cd foo && $APM unlink --prefix ${ws.dirpath} --loglevel silly`)
+        .run(`cd foo && $APM unlink --prefix ${ws.dirpath}`)
         .then(() => fs.exists(`${ws.dirpath}/lib/amd_modules/foo`))
         .then(result => expect(result).to.be.false)
       )
@@ -75,10 +75,10 @@ describe('linking', function () {
         'foo/package.json': '{ "name": "foo", "version": "4.5.6" }'
       }
       return Workspace.create(tree).then(ws => ws
-        .run(`cd foo && $APM link --prefix ${ws.dirpath} --loglevel silly`)
+        .run(`cd foo && $APM link --prefix ${ws.dirpath}`)
         .then(() => fs.readJson(`${ws.dirpath}/lib/amd_modules/foo/package.json`))
         .then(result => expect(result).to.have.property('version', '4.5.6'))
-        .then(() => ws.run(`cd foo && $APM unlink --prefix ${ws.dirpath} --loglevel silly`))
+        .then(() => ws.run(`cd foo && $APM unlink --prefix ${ws.dirpath}`))
         .then(() => fs.exists(`${ws.dirpath}/lib/amd_modules/foo`))
         .then(result => expect(result).to.be.false)
       )
@@ -90,7 +90,7 @@ describe('linking', function () {
         'foo/package.json': '{ "name": "foo" }'
       }
       return Workspace.create(tree).then(ws => ws
-        .run(`cd foo && $APM unlink bar --prefix ${ws.dirpath} --loglevel silly`)
+        .run(`cd foo && $APM unlink bar --prefix ${ws.dirpath}`)
         .then(result => expect(result.stdout).to.contain(`unlink ${ws.dirpath}/foo/amd_modules/bar`))
       )
     })
@@ -100,7 +100,7 @@ describe('linking', function () {
         'foo/amd_modules/bar/package.json': '{ "name": "bar" }'
       }
       return Workspace.create(tree).then(ws => ws
-        .run(`cd foo && $APM unlink bar --prefix ${ws.dirpath} --loglevel silly`)
+        .run(`cd foo && $APM unlink bar --prefix ${ws.dirpath}`)
         .then(() => fs.exists(`${ws.dirpath}/foo/amd_modules/bar`))
         .then(result => expect(result).to.be.false)
       )
@@ -111,10 +111,10 @@ describe('linking', function () {
         'lib/amd_modules/bar/package.json': '{ "name": "bar" }'
       }
       return Workspace.create(tree).then(ws => ws
-        .run(`cd foo && $APM link bar --prefix ${ws.dirpath} --loglevel silly`)
+        .run(`cd foo && $APM link bar --prefix ${ws.dirpath}`)
         .then(() => fs.exists(`${ws.dirpath}/foo/amd_modules/bar`))
         .then(result => expect(result).to.be.true)
-        .then(() => ws.run(`cd foo && $APM unlink bar --prefix ${ws.dirpath} --loglevel silly`))
+        .then(() => ws.run(`cd foo && $APM unlink bar --prefix ${ws.dirpath}`))
         .then(() => fs.exists(`${ws.dirpath}/foo/amd_modules/bar`))
         .then(result => expect(result).to.be.false)
       )
@@ -128,7 +128,7 @@ describe('linking', function () {
         'lib/amd_modules/bar/package.json': '{"name": "bar", "version": "1.2.3"}'
       }
       return Workspace.create(tree).then(ws => ws
-        .run(`cd foo && $APM link bar --prefix ${ws.dirpath} --loglevel silly`)
+        .run(`cd foo && $APM link bar --prefix ${ws.dirpath}`)
         .then(() => ws.readJson(`foo/amd_modules/bar/package.json`))
         .then(bar => {
           expect(bar).to.have.property('name', 'bar')
@@ -142,7 +142,7 @@ describe('linking', function () {
         'lib/amd_modules/bar/package.json': '{"name": "bar", "version": "1.2.3"}'
       }
       return Workspace.create(tree).then(ws => ws
-        .run(`cd foo && $APM link bar --prefix ${ws.dirpath} --loglevel silly`)
+        .run(`cd foo && $APM link bar --prefix ${ws.dirpath}`)
         .then(() => ws.readJson(`foo/amd_modules/bar/package.json`))
         .then(bar => {
           expect(bar).to.have.property('name', 'bar')
@@ -155,7 +155,7 @@ describe('linking', function () {
         'foo/package.json': '{"name": "foo"}'
       }
       return Workspace.create(tree).then(ws => ws
-        .run(`cd foo && $APM link bar --prefix ${ws.dirpath} --loglevel silly`)
+        .run(`cd foo && $APM link bar --prefix ${ws.dirpath}`)
         .then(() => ws.readJson(`foo/amd_modules/bar/package.json`))
         .then(bar => {
           expect(bar).to.have.property('name', 'bar')

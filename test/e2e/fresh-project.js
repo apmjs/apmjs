@@ -46,7 +46,7 @@ describe('fresh project with package.json', function () {
         amdDependencies: { foo: '^1.0.0' }
       })
     }).then(ws => ws
-      .run('$APM install --loglevel verbose')
+      .run('$APM install --loglevel info')
       .then(result => {
         expect(result.stderr).to.contain('npm info ok')
         return ws.readJson(`amd_modules/foo/package.json`)
@@ -92,9 +92,9 @@ describe('fresh project with package.json', function () {
         version: '1.0',
         amdDependencies: { coo: '1.0.0', bar: '1.0.1' }
       })
-    }).then(ws => ws.run('$APM install --loglevel verbose')
+    }).then(ws => ws.run('$APM install')
       .then(result => {
-        expect(result.stderr).to.contain('version conflict: upgrade bar@<=1.0.0 (in coo@1.0.0) to match 1.0.1 (as required by main@1.0)')
+        expect(result.stderr).to.contain('version conflict: upgrade bar@<=1.0.0 (required by coo@1.0.0) to match 1.0.1 (required by main@1.0)')
       })
       .then(() => ws.readJson(`amd_modules/coo/package.json`))
       .then(pkg => expect(pkg).to.have.property('version', '1.0.0'))

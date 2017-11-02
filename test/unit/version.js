@@ -50,35 +50,4 @@ describe('Version', function () {
       })
     })
   })
-  describe('.conflictError()', function () {
-    beforeEach(() => sinon.stub(log, 'error'))
-    afterEach(() => log.error.restore())
-    it('should warn to upgrade former packages', function () {
-      Version.conflictError('bar', {
-        version: '1.0.1',
-        required: '1.0.1',
-        parent: 'parent1@2.0.0'
-      }, {
-        version: '1.0.0',
-        required: '1.0.0',
-        parent: 'parent2'
-      })
-      var msg = 'version conflict: upgrade bar@1.0.0 (in parent2) to match 1.0.1 (as required by parent1@2.0.0)'
-      expect(log.error.args[0][0]).to.equal(msg)
-    })
-
-    it('should warn to upgrade latter packages', function () {
-      Version.conflictError('bar', {
-        required: '1.0.1',
-        version: '1.0.1',
-        parent: 'parent1@2.0.0'
-      }, {
-        version: '1.0.0',
-        required: '1.0.0',
-        parent: 'parent2'
-      })
-      var msg = 'version conflict: upgrade bar@1.0.0 (in parent2) to match 1.0.1 (as required by parent1@2.0.0)'
-      expect(log.error.args[0][0]).to.equal(msg)
-    })
-  })
 })

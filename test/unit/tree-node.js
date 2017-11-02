@@ -30,6 +30,7 @@ describe('TreeNode', function () {
   beforeEach(() => {
     TreeNode.nodes = {}
     TreeNode.referenceCounts = {}
+    TreeNode.pending = {}
   })
 
   describe('new TreeNode()', function () {
@@ -79,7 +80,7 @@ describe('TreeNode', function () {
       var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.x'}})
       expect(_.size(TreeNode.nodes)).to.equal(1)
       return Promise
-        .each(['bar', 'bar'], id => parent.addDependency(id))
+        .each(['bar', 'bar', 'bar'], id => parent.addDependency(id, '1.x'))
         .then(() => expect(_.size(TreeNode.nodes)).to.equal(2))
     })
     it('should throw when not available', function () {
@@ -89,39 +90,6 @@ describe('TreeNode', function () {
           error.UnmetDependency,
           /bar@2.0.0 not available, required by parent/
         )
-    })
-    it('should install newer when not compliant 1', function () {
-      return Promise.each([
-        new TreeNode({name: 'parent2', dependencies: {'bar': '>=1.0.1'}}),
-        new TreeNode({name: 'parent1', dependencies: {'bar': '1.0.0'}})
-      ], parent => parent.addDependency('bar'))
-      .then(() => {
-        expect(TreeNode.nodes.bar).to.have.property('version', '1.0.1')
-      })
-    })
-    it('should install newer when not compliant 2', function () {
-      return Promise.each([
-        new TreeNode({name: 'parent1', dependencies: {'bar': '1.0.0'}}),
-        new TreeNode({name: 'parent2', dependencies: {'bar': '>=1.0.1'}})
-      ], parent => parent.addDependency('bar'))
-      .then(() => {
-        expect(TreeNode.nodes.bar).to.have.property('version', '1.0.1')
-      })
-    })
-    it('should remove isolated node', function () {
-      var root = new TreeNode({
-        version: '0.0.1',
-        name: 'root',
-        dependencies: { haa: '1.0.0' }
-      })
-      return root.populateChildren()
-      .then(() => {
-        expect(_.size(TreeNode.nodes)).to.equal(4)
-        return root.addDependency('hoo')
-      })
-      .then(() => {
-        expect(_.size(TreeNode.nodes)).to.equal(4)
-      })
     })
   })
   describe('dependency trees', function () {
@@ -178,7 +146,7 @@ describe('TreeNode', function () {
         dependencies: { bar: '1.0.0', coo: '1.0.x' }
       })
       return root.populateChildren().then(() => {
-        var msg = 'version conflict: upgrade bar@1.0.0 (in root@1.0.0) to match 1.0.1 (as required by coo@1.0.1)'
+        var msg = 'version conflict: upgrade bar@1.0.0 (required by root@1.0.0) to match 1.0.1 (required by coo@1.0.1)'
         expect(log.error).to.have.been.called
         expect(log.error.args[0][0]).to.equal(msg)
       })
@@ -190,7 +158,7 @@ describe('TreeNode', function () {
         dependencies: { bar: '1.0.x', laa: '1.0.0' }
       })
       return root.populateChildren().then(() => {
-        var msg = 'version conflict: upgrade bar@1.0.0 (in laa@1.0.0) to match 1.0.x (as required by root@0.0.1)'
+        var msg = 'version conflict: upgrade bar@1.0.0 (required by laa@1.0.0) to match 1.0.x (required by root@0.0.1)'
         expect(log.error).to.have.been.called
         expect(log.error.args[0][0]).to.equal(msg)
       })
@@ -203,6 +171,7 @@ describe('TreeNode', function () {
         name: 'root',
         dependencies: { bar: '1.0.x', laa: '1.0.0' }
       })
+      root.isRoot = true
       return root.populateChildren()
     })
     it('should return all dependent packages', function () {

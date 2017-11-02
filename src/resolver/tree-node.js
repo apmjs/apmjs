@@ -1,32 +1,30 @@
 'use strict'
+const error = require('../utils/error.js')
 const Promise = require('bluebird')
 const assert = require('assert')
 const treePrinter = require('tree-printer')
 const Package = require('../package.js')
-const Semver = require('semver')
 const log = require('npmlog')
 const Version = require('./version.js')
 const npm = require('../utils/npm.js')
 const _ = require('lodash')
 
-function TreeNode (pkg, required) {
+function TreeNode (pkg) {
   assert(pkg.name, 'package name is required')
   this.name = pkg.name
   this.parents = {}
   this.children = {}
   this.referenceCount = 0
-  this.required = required || 'ROOT'
   this.setPackage(pkg)
   TreeNode.nodes[this.name] = this
-  log.silly(this.toString(), 'created')
+  log.silly(`${this} created`)
 }
 
 TreeNode.nodes = {}
 TreeNode.referenceCounts = {}
 
 TreeNode.packageList = function () {
-  let notRoot = pkg => pkg.required !== 'ROOT'
-  return _.filter(TreeNode.nodes, notRoot).map(node => node.pkg)
+  return _.filter(TreeNode.nodes, node => !node.isRoot).map(node => node.pkg)
 }
 
 TreeNode.prototype.toPlainTree = function () {
@@ -48,73 +46,95 @@ TreeNode.prototype.printTree = function () {
 }
 
 TreeNode.prototype.updateOrInstallDependency = function (name, semver) {
+  log.silly(`update or install dependency ${name}@${semver}`)
   if (this.children[name]) {
     this.children[name].remove(this)
   }
   return this.addDependency(name, semver, true)
 }
 
-TreeNode.prototype.addDependency = function (name, semver, update) {
-  log.silly(`addDependency: ${name}@${semver}`)
-  return npm
-    .getPackageMeta(name, this.pkg)
-    .then(info => {
-      semver = semver || Version.derive(info)
-      log.silly('finding maxSatisfying for name:', name, 'semver:', semver)
-      let target = Package.createMaxSatisfying(info, semver, `required by ${this}`)
-      let installed = TreeNode.nodes[name]
-
-      if (installed) {
-        installed.checkConformance(target, semver, this)
-        this.appendChild(installed, semver, update)
-        return installed.upgradeTo(target).then(() => installed)
+// This should be side-effect free, race condition happens
+TreeNode.prototype.createLocalNode = function (name, semver) {
+  log.silly(`creating local node for ${name}@${semver}`)
+  return Package.loadModule(name)
+    .then(pkg => {
+      if (Version.satisfies(pkg.version, semver)) {
+        log.silly(`local node created ${pkg}`)
+        return new TreeNode(pkg)
       }
-
-      let node = new TreeNode(target, semver)
-      this.appendChild(node, semver, update)
-      return node.populateChildren().then(() => node)
+      log.silly(`local node ${pkg} version not match ${name}@${semver}`)
+      return null
+    })
+    .catch(err => {
+      if (err.code === 'ENOENT') {
+        log.silly(`local node for ${name}@${semver} not found`)
+        return null
+      }
+      log.error(`reading local node error: ${name}@${semver}`)
+      throw err
     })
 }
 
-TreeNode.prototype.checkConformance = function (pkg, semver, parent) {
-  log.silly('checking comformance between', `${pkg.name}@${pkg.version} and ${this}`)
-  if (this.version === pkg.version) {
-    return
-  }
-  // erro promotion goes here, one by one...
-  let p = _.sample(this.parents)
-  let installed = {
-    version: this.version,
-    required: p.pkg.dependencies[this.name],
-    parent: p || 'ROOT'
-  }
-  let installing = {
-    version: pkg.version,
-    required: semver,
-    parent: parent
-  }
-  Version.conflictError(this.name, installed, installing)
+// This should be side-effect free, race condition happens
+TreeNode.prototype.createRemoteNode = function (name, semver) {
+  log.silly(`creating remote node for ${name}@${semver}`)
+  return npm
+    .getPackageMeta(name, this.pkg)
+    .then(info => {
+      let version = Version.maxSatisfying(_.keys(info.versions), semver || '*')
+      if (!version) {
+        let msg = `package ${name}${semver && ('@' + semver)} not available, required by ${this}`
+        throw new error.UnmetDependency(msg)
+      }
+      let pkg = new Package(info.versions[version])
+      return new TreeNode(pkg)
+    })
 }
 
-TreeNode.prototype.upgradeTo = function (pkg) {
-  if (Semver.gte(this.version, pkg.version)) {
+TreeNode.prototype.addDependency = function (name, semver, update) {
+  log.silly(`add dependency: ${name}@${semver}`)
+  return enque(name, () => {
+    let node
+    if ((node = TreeNode.nodes[name])) {
+      log.silly(`reusing dependency in tree: ${node}`)
+      var compatible = node.checkConformance(semver, this)
+      if (!update || compatible) {
+        this.appendChild(node, semver)
+        return Promise.resolve(node)
+      }
+    }
     return Promise.resolve()
-  }
-  this.setPackage(pkg)
-  this.prune()
-  return this.populateChildren()
+    .then(update => update ? null : this.createLocalNode(name, semver))
+    .then(node => node || this.createRemoteNode(name, semver))
+    .then(node => {
+      node.update = update
+      this.appendChild(node, semver)
+      return node.populateChildren().then(() => node)
+    })
+  })
 }
 
-TreeNode.prototype.prune = function () {
-  let installed = _.keys(this.children)
-  let needed = _.keys(this.pkg.dependencies)
-  let isolated = _.difference(installed, needed)
-  log.silly(`pruning isolated packages for ${this}`, isolated)
-  _.forEach(isolated, name => this.children[name].remove(this))
+TreeNode.prototype.checkConformance = function (semver, parent) {
+  log.silly('checking comformance between', `${this} and ${semver}`)
+  if (Version.satisfies(this.version, semver)) {
+    return true
+  }
+  let name = this.name
+  let parentInstalled = _.sample(this.parents)
+  let parentRequired = parentInstalled.pkg.dependencies[name]
+  let msg = 'version conflict: '
+  if (Version.ltr(this.version, semver)) {
+    msg += `upgrade ${name}@${parentRequired} (required by ${parentInstalled}) to match ${semver} (required by ${parent})`
+  } else {
+    let semverInstalled = parentInstalled.pkg.dependencies[name]
+    msg += `upgrade ${name}@${semver} (required by ${parent}) to match ${semverInstalled} (required by ${parentInstalled})`
+  }
+  log.error(msg)
+  return false
 }
 
 TreeNode.prototype.populateChildren = function () {
-  log.silly(`populating children ${_.keys(this.pkg.dependencies)} for ${this}`)
+  log.silly(`populating children for ${this}:`, _.keys(this.pkg.dependencies))
 
   return Promise
   .all(_.map(this.pkg.dependencies, (semver, name) => this.addDependency(name, semver)))
@@ -139,14 +159,13 @@ TreeNode.prototype.save = function (conf) {
   ])
 }
 
-TreeNode.prototype.appendChild = function (child, semver, update) {
-  log.silly('appendingChild', child.toString(), 'to', this.toString())
+TreeNode.prototype.appendChild = function (child) {
+  log.silly('appending child', child.toString(), 'to', this.toString())
 
   child.parents[this.name] = this
   this.children[child.name] = child
 
   child.referenceCount++
-  child.update = update
   return this
 }
 
@@ -157,6 +176,7 @@ TreeNode.prototype.destroy = function () {
 }
 
 TreeNode.prototype.remove = function (parent) {
+  log.silly(`removing ${this} from ${parent}`)
   delete this.parents[parent.name].children[this.name]
   delete this.parents[parent.name]
 
@@ -164,6 +184,16 @@ TreeNode.prototype.remove = function (parent) {
   if (this.referenceCount <= 0) {
     this.destroy()
   }
+}
+
+TreeNode.pending = {}
+
+function enque (name, fn) {
+  if (!TreeNode.pending[name]) {
+    TreeNode.pending[name] = Promise.resolve()
+  }
+  TreeNode.pending[name] = TreeNode.pending[name].then(fn)
+  return TreeNode.pending[name]
 }
 
 module.exports = TreeNode
