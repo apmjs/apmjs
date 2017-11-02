@@ -12,7 +12,7 @@
     "debug": "DEBUG=apmjs:* mocha --recursive",
     "preversion": "npm run lint && npm test",
     "postversion": "git push && git push --tags",
-    "test": "mocha --recursive"
+    "test": "export DEBUG=node-ramdisk && mocha --recursive"
   },
   "keywords": [
     "AMD",
