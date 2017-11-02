@@ -1,6 +1,5 @@
 const chai = require('chai')
 const log = require('npmlog')
-const sinon = require('sinon')
 const error = require('../../src/utils/error.js')
 const expect = chai.expect
 const debug = require('debug')('apmjs:test:version')
