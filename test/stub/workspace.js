@@ -1,3 +1,4 @@
+'use strict'
 const path = require('path')
 const log = require('npmlog')
 const process = require('process')
@@ -19,20 +20,20 @@ Workspace.create = function (root) {
   let ws = new Workspace(port)
   return createDisk()
   .then(mountpoint => {
-    var dirname = Math.random().toString(36).substr(2)
-    ws.dirpath = path.join(mountpoint, dirname)
+    let dirname = Math.random().toString(36).substr(2)
+    ws.dirpath = path.resolve(mountpoint, dirname)
     return fs.ensureDir(ws.dirpath).then(() => createTree(ws.dirpath, root))
   })
   .then(() => ws)
 }
 
 Workspace.prototype.readJson = function (filename) {
-  var file = path.resolve(this.dirpath, filename)
+  let file = path.resolve(this.dirpath, filename)
   return fs.readJson(file)
 }
 
 Workspace.prototype.readJsonSync = function (filename) {
-  var file = path.resolve(this.dirpath, filename)
+  let file = path.resolve(this.dirpath, filename)
   return fs.readJsonSync(file)
 }
 
@@ -50,8 +51,8 @@ Workspace.prototype.run = function (cmd) {
 }
 
 function createTree (dirpath, root) {
-  var ps = _.map(root, (val, key) => {
-    var nodename = path.resolve(dirpath, key)
+  let ps = _.map(root, (val, key) => {
+    let nodename = path.resolve(dirpath, key)
     return _.isString(val)
       ? createFile(nodename, val)
       : createTree(nodename, val)
@@ -74,10 +75,13 @@ function createDisk () {
       }
       throw err
     })
-    .tap(mountpoint => {
+    .then(mountpoint => {
       console.log('ramdisk created in', mountpoint)
-      Workspace.mountpoint = mountpoint
       process.on('exit', unmountDisk)
+      return fs.realpath(mountpoint)
+    })
+    .tap(mountpoint => {
+      Workspace.mountpoint = mountpoint
     })
   }
   return Workspace.creating

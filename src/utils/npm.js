@@ -1,3 +1,4 @@
+'use strict'
 const registry = require('../registry.js')
 const os = require('os')
 const error = require('./error.js')
@@ -13,15 +14,15 @@ const tarball = require('tarball-extract')
 const _ = require('lodash')
 
 function downloadPackage (url, dir) {
-  var name = path.basename(url)
-  var tarfile = path.join(os.tmpdir(), `${name}.tgz`)
-  var untardir = path.join(os.tmpdir(), `${name}`)
-  var pkgdir = path.join(untardir, 'package')
+  let name = path.basename(url)
+  let tarfile = path.join(os.tmpdir(), `${name}.tgz`)
+  let untardir = path.join(os.tmpdir(), `${name}`)
+  let pkgdir = path.join(untardir, 'package')
   // TODO: tarball cache
   log.http('tarball', url)
   return Promise.all([fs.remove(untardir), fs.remove(tarfile)])
     .then(() => new Promise((resolve, reject) => {
-      var s = request({
+      let s = request({
         url: url,
         followRedirect: true
       })
@@ -41,7 +42,7 @@ function downloadPackage (url, dir) {
     .then(() => fs.move(pkgdir, dir, {overwrite: true}))
 }
 
-var metaCache = {}
+let metaCache = {}
 
 /**
  * get meta for package `name`
@@ -52,7 +53,7 @@ function getPackageMeta (name, parent) {
   if (metaCache[name]) {
     return metaCache[name]
   }
-  var metaUrl = registry.packageUrl(name)
+  let metaUrl = registry.packageUrl(name)
   log.http('meta', metaUrl)
   metaCache[name] = rp({
     url: metaUrl,
@@ -70,24 +71,24 @@ function getPackageMeta (name, parent) {
     if (!_.has(desc, 'versions')) {
       throw new error.InvalidPackageMeta(name, parent)
     }
-    var versionList = Object.keys(desc.versions).join(',')
+    let versionList = Object.keys(desc.versions).join(',')
     debug('package meta retrieved:', `${desc.name}@${versionList}`)
   })
   return metaCache[name]
 }
 
 function load (conf) {
-  var config = {}
+  let config = {}
   _.assign(config, conf)
   return Promise.fromCallback(cb => npm.load(config, cb))
 }
 
-var npmDelegate = {downloadPackage, getPackageMeta, load}
+let npmDelegate = {downloadPackage, getPackageMeta, load}
 
 Object.defineProperties(npmDelegate, {
   'globalDir': {
     get: () => {
-      var p = path.resolve(npm.globalDir, '../amd_modules')
+      let p = path.resolve(npm.globalDir, '../amd_modules')
       return p
     },
     configurable: true

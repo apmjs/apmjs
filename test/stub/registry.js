@@ -5,15 +5,15 @@ const http = require('http')
 const rMeta = /^\/([^/]+)$/
 const rTarball = /^\/([^/]+)\/-\/(.*)$/
 
-var server
+let server
 
 exports.startServer = function (cb) {
-  var port = process.env.REGISTRY_PORT || '8723'
+  let port = process.env.REGISTRY_PORT || '8723'
   server = http.createServer(requestHandler)
   server.listen(port, cb)
 
   function requestHandler (req, res) {
-    var match
+    let match
 
     if ((match = req.url.match(rMeta))) {
       let name = decodeURIComponent(match[1])

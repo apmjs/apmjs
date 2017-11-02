@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict'
 ;(function () { // wrapper in case we're in module_context mode
   // windows: running "npm blah" in this folder will invoke WSH, not node.
   /* global WScript */
@@ -16,17 +17,17 @@
 
   process.title = 'npm'
 
-  var pkg = require('../package.json')
-  var log = require('npmlog')
-  var path = require('path')
-  var npm = require('npm')
-  var npmconf = require('npm/lib/config/core.js')
-  var errorHandler = require('npm/lib/utils/error-handler.js')
+  let pkg = require('../package.json')
+  let log = require('npmlog')
+  let path = require('path')
+  let npm = require('npm')
+  let npmconf = require('npm/lib/config/core.js')
+  let errorHandler = require('npm/lib/utils/error-handler.js')
 
-  var configDefs = npmconf.defs
-  var shorthands = configDefs.shorthands
-  var types = configDefs.types
-  var nopt = require('nopt')
+  let configDefs = npmconf.defs
+  let shorthands = configDefs.shorthands
+  let types = configDefs.types
+  let nopt = require('nopt')
 
   log.pause()
   log.info('it worked if it ends with', 'ok')
@@ -39,7 +40,7 @@
 
   log.verbose('cli', process.argv)
 
-  var conf = nopt(types, shorthands)
+  let conf = nopt(types, shorthands)
   npm.argv = conf.argv.remain
   if (npm.deref(npm.argv[0])) npm.command = npm.argv.shift()
   else conf.usage = true

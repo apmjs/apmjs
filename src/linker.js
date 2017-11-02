@@ -1,4 +1,6 @@
+'use strict'
 const debug = require('debug')('apmjs:linker')
+const log = require('npmlog')
 const Installer = require('./installer')
 const Version = require('./resolver/version.js')
 const path = require('path')
@@ -14,8 +16,8 @@ function linkCurrent () {
     fs.ensureDir(npm.globalDir)
   ])
   .spread(pkg => {
-    var link = path.resolve(npm.globalDir, pkg.name)
-    var file = pkg.pathname
+    let link = path.resolve(npm.globalDir, pkg.name)
+    let file = pkg.pathname
     return fs.remove(link)
       .then(() => fs.ensureSymlink(file, link))
       .then(() => console.log(`${link} -> ${file}`))
@@ -31,7 +33,7 @@ function loadOrInstall (name, semver) {
 }
 
 function linkDependency (decl) {
-  var pkgDescriptor = Version.parseDependencyDeclaration(decl)
+  let pkgDescriptor = Version.parseDependencyDeclaration(decl)
   return Promise
     .all([
       loadOrInstall(pkgDescriptor.name, pkgDescriptor.semver),
@@ -41,8 +43,8 @@ function linkDependency (decl) {
       ])
     ])
     .spread((pkg, dir) => {
-      var link = path.resolve(dir, pkgDescriptor.name)
-      var file = pkg.pathname
+      let link = path.resolve(dir, pkgDescriptor.name)
+      let file = pkg.pathname
       return fs.remove(link)
         .then(() => fs.ensureSymlink(file, link))
         .then(() => console.log(`${link} -> ${file}`))
@@ -55,15 +57,8 @@ function unlinkCurrent () {
     fs.ensureDir(npm.globalDir)
   ])
   .spread(pkg => {
-    var link = path.resolve(npm.globalDir, pkg.name)
-    return fs.unlink(link).then(() => console.log(`unlink ${link}`))
-  })
-  .catch(e => {
-    if (e.code === 'ENOENT') {
-      console.log('already unlinked')
-      return
-    }
-    throw e
+    let link = path.resolve(npm.globalDir, pkg.name)
+    return fs.remove(link).then(() => console.log(`unlink ${link}`))
   })
 }
 
@@ -74,15 +69,8 @@ function unlinkDependency (name) {
       findUp('package.json').then(file => path.resolve(file, '../amd_modules'))
     ])
     .then(dir => {
-      var link = path.resolve(dir, name)
-      return fs.unlink(link).then(() => console.log(`unlink ${link}`))
-    })
-    .catch(e => {
-      if (e.code === 'ENOENT') {
-        console.log('already unlinked')
-        return
-      }
-      throw e
+      let link = path.resolve(dir, name)
+      return fs.remove(link).then(() => console.log(`unlink ${link}`))
     })
 }
 

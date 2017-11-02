@@ -1,3 +1,4 @@
+'use strict'
 const chai = require('chai')
 const expect = chai.expect
 const mock = require('mock-fs')
@@ -5,18 +6,16 @@ const Installer = require('../../src/installer.js')
 const npm = require('../../src/utils/npm.js')
 const fs = require('fs-extra')
 const sinon = require('sinon')
-const Package = require('../../src/package.js')
 const _ = require('lodash')
 chai.use(require('sinon-chai'))
 chai.use(require('chai-as-promised'))
 
 describe('Installer', function () {
-  var inst
-  var fooDesc = require('../stub/foo.info.json').versions['1.0.0']
-  var foo = new Package(fooDesc)
-  var barDesc = _.chain(fooDesc).clone().set('name', 'bar').value()
-  var bazDesc = _.chain(fooDesc).clone().set('name', 'baz').value()
-  var sandbox
+  let inst
+  let fooDesc = require('../stub/foo.info.json').versions['1.0.0']
+  let barDesc = _.chain(fooDesc).clone().set('name', 'bar').value()
+  let bazDesc = _.chain(fooDesc).clone().set('name', 'baz').value()
+  let sandbox
 
   beforeEach(function () {
     inst = new Installer('/root/amd_modules')
@@ -53,7 +52,7 @@ describe('Installer', function () {
     it('should install latest by default', function () {
       return Installer.globalInstall('foo').then(function () {
         expect(Installer.prototype.installPackage).to.have.been.calledOnce
-        var args = Installer.prototype.installPackage.args[0]
+        let args = Installer.prototype.installPackage.args[0]
         expect(args[0]).to.have.property('name', 'baz')
         expect(args[0]).to.have.property('version', '1.1.0')
       })
@@ -61,30 +60,21 @@ describe('Installer', function () {
     it('should install maxSatisfying', function () {
       return Installer.globalInstall('foo', '1.0.x').then(function () {
         expect(Installer.prototype.installPackage).to.have.been.calledOnce
-        var args = Installer.prototype.installPackage.args[0]
+        let args = Installer.prototype.installPackage.args[0]
         expect(args[0]).to.have.property('name', 'baz')
         expect(args[0]).to.have.property('version', '1.0.1')
       })
     })
   })
-  describe('#installPackage()', function () {
-    it('should install foo to /root/amd_modules/foo', function () {
-      inst.installPackage(foo)
-      expect(npm.downloadPackage).to.have.been.calledWith(
-        'http://apm/foo/-/foo-1.0.0.tgz',
-        '/root/amd_modules/foo'
-      )
-    })
-  })
   describe('#saveMapping()', function () {
     it('should generate index.json', function () {
-      var map = [{
+      let map = [{
         name: 'foo',
         version: '2.2.2',
         filepath: 'foo/a.js',
         fullpath: '/root/foo/a.js'
       }]
-      var str = JSON.stringify(map, null, 2) + '\n'
+      let str = JSON.stringify(map, null, 2) + '\n'
       return inst.saveMapping(map)
         .then(() => fs.readFile('/root/amd_modules/index.json', {encoding: 'utf8'}))
         .then(index => expect(index).to.deep.equal(str))

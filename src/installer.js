@@ -1,3 +1,4 @@
+'use strict'
 const process = require('process')
 const Package = require('./package.js')
 const log = require('npmlog')
