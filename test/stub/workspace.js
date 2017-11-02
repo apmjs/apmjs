@@ -1,4 +1,5 @@
 'use strict'
+const os = require('os')
 const path = require('path')
 const log = require('npmlog')
 const process = require('process')
@@ -8,7 +9,7 @@ const _ = require('lodash')
 const fs = require('fs-extra')
 const ramdisk = require('node-ramdisk')
 const testRoot = 'apmjs-test-root'
-const rMountpoint = /"(.*)" already mounted/
+const rAlreadyMounted = /"(.*)" already mounted/
 
 function Workspace (port) {
   this.port = port
@@ -69,11 +70,12 @@ function createDisk () {
     Workspace.disk = ramdisk(testRoot)
     Workspace.creating = Promise.fromCallback(cb => Workspace.disk.create(10, cb))
     .catch(err => {
-      let match = rMountpoint.exec(err.message)
+      let match = rAlreadyMounted.exec(err.message)
       if (match) {
         return match[1]
       }
-      throw err
+      var rootdir = path.resolve(os.tmpdir(), testRoot)
+      return fs.ensureDir(rootdir).then(() => rootdir)
     })
     .then(mountpoint => {
       console.log('ramdisk created in', mountpoint)
