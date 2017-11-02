@@ -1,6 +1,4 @@
-const defaults = require('npm/lib/config/defaults.js').defaults
 const log = require('npmlog')
-const _ = require('lodash')
 const debug = require('debug')('apmjs:registry')
 const url = require('url')
 const npm = require('npm')
