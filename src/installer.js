@@ -43,7 +43,7 @@ Installer.prototype.installPackageIfNeeded = function (pkg) {
   return pkg.hasInstalled(this.pathname)
     .then(exists => {
       if (exists) { return }
-      return this.installPackage(pkg)
+      return this.installPackage(pkg).then(() => (pkg.newlyInstalled = true))
     })
 }
 

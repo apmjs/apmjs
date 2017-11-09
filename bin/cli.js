@@ -79,6 +79,9 @@
       'install': {
         get: () => require('../src/commands/install.js')
       },
+      'update': {
+        get: () => require('../src/commands/update.js')
+      },
       'link': {
         get: () => require('../src/commands/link.js')
       },

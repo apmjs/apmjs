@@ -23,14 +23,21 @@ function TreeNode (pkg) {
 TreeNode.nodes = {}
 TreeNode.referenceCounts = {}
 
-TreeNode.packageList = function () {
-  return _.filter(TreeNode.nodes, node => !node.isRoot).map(node => node.pkg)
+TreeNode.dependencyList = function () {
+  return TreeNode.childList().map(node => node.pkg)
+}
+
+TreeNode.childList = function () {
+  return _.filter(TreeNode.nodes, node => !node.isRoot)
 }
 
 TreeNode.prototype.toPlainTree = function () {
   let obj = {
     name: this.toString(),
     children: _.map(this.children, child => child.toPlainTree())
+  }
+  if (this.pkg.newlyInstalled) {
+    obj.name += ' (newly installed)'
   }
   return obj
 }

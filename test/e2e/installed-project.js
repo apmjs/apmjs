@@ -129,7 +129,8 @@ describe('installed project with package.json and node_modules', function () {
     })
   })
   describe('installing another package', function () {
-    var workspace
+    let workspace
+    let result
     before(() => Workspace
       .create({
         'package.json': JSON.stringify({
@@ -143,12 +144,16 @@ describe('installed project with package.json and node_modules', function () {
       })
       .tap(ws => (workspace = ws))
       .then(ws => ws.run('$APM install foo@1.0.0 --save'))
+      .tap(res => (result = res))
     )
     it('should make install successful', function () {
       return workspace.readJson(`amd_modules/foo/package.json`).then(bar => {
         expect(bar).to.have.property('name', 'foo')
         expect(bar).to.have.property('version', '1.0.0')
       })
+    })
+    it('should output installed packages', function () {
+      expect(result.stdout).to.equal('index\n├── bar@1.0.0\n└── foo@1.0.0 (newly installed)\n')
     })
     it('should retain others', function () {
       return workspace.readJson(`amd_modules/bar/package.json`).then(bar => {

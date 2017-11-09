@@ -72,6 +72,25 @@ describe('fresh project with package.json', function () {
       }))
   })
 
+  it('should write amd-lock.json', function () {
+    return Workspace.create({
+      'package.json': JSON.stringify({
+        name: 'main',
+        version: '2.1.0',
+        amdDependencies: { bar: '1.0.0' }
+      })
+    }).then(ws => ws.run('$APM install')
+      .then(() => ws.readJson(`amd-lock.json`))
+      .then(lock => {
+        expect(lock.name).to.equal('main')
+        expect(lock.version).to.equal('2.1.0')
+        expect(lock).to.have.property('dependencies.bar')
+        expect(lock.dependencies.bar).to.have.property('resolved', 'http://apmjs.com/-/bar-1.0.0.tgz')
+        expect(lock.dependencies.bar).to.have.property('integrity', 'xxx')
+        expect(lock.dependencies.bar).to.have.property('version', '2.1.0')
+      }))
+  })
+
   it('should install the right dependency', function () {
     return Workspace.create({
       'package.json': JSON.stringify({
@@ -79,6 +98,7 @@ describe('fresh project with package.json', function () {
         amdDependencies: { coo: '1.0.0' }
       })
     }).then(ws => ws.run('$APM install')
+      .then(result => expect(result.stdout).to.equal('main\n└─┬ coo@1.0.0 (newly installed)\n  └── bar@1.0.0 (newly installed)\n'))
       .then(() => ws.readJson(`amd_modules/coo/package.json`))
       .then(foo => expect(foo).to.have.property('version', '1.0.0'))
       .then(() => ws.readJson(`amd_modules/bar/package.json`))

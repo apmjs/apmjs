@@ -6,6 +6,7 @@
       "version": "1.0.0",
       "amdDependencies": {},
       "dist": {
+        "shasum": "xxx",
         "tarball": "http://apmjs.com/bar/-/bar-1.0.0.tgz"
       }
     },

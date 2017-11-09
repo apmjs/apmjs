@@ -164,7 +164,7 @@ describe('TreeNode', function () {
       })
     })
   })
-  describe('.packageList()', function () {
+  describe('.dependencyList()', function () {
     beforeEach(function () {
       var root = new TreeNode({
         version: '0.0.1',
@@ -175,13 +175,13 @@ describe('TreeNode', function () {
       return root.populateChildren()
     })
     it('should return all dependent packages', function () {
-      var nodes = TreeNode.packageList()
+      var nodes = TreeNode.dependencyList()
       var keys = _.fromPairs(nodes.map(pkg => [pkg.name, pkg]))
       expect(keys).to.have.property('bar')
       expect(keys).to.have.property('laa')
     })
     it('should filter out root package', function () {
-      var nodes = TreeNode.packageList()
+      var nodes = TreeNode.dependencyList()
       var keys = _.fromPairs(nodes.map(pkg => [pkg.name, pkg]))
       expect(nodes).to.have.lengthOf(2)
       expect(keys).to.not.have.property('root')
