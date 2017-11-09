@@ -45,7 +45,7 @@
   if (npm.deref(npm.argv[0])) npm.command = npm.argv.shift()
   else conf.usage = true
 
-  if (npm.command === 'version') {
+  if (conf.version) {
     console.log(pkg.version)
     return errorHandler.exit(0)
   }

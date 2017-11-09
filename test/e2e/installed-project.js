@@ -65,6 +65,34 @@ describe('installed project with package.json and node_modules', function () {
       })
     })
   })
+  describe('installing upon broken dependencies', function () {
+    var workspace
+    var result
+    before(() => Workspace
+      .create({
+        'package.json': JSON.stringify({
+          name: 'index',
+          amdDependencies: { bar: '1.0.1' }
+        }),
+        'amd_modules/bar/package.json': JSON.stringify({
+          name: 'bar',
+          version: '1.0.0'
+        })
+      })
+      .tap(ws => (workspace = ws))
+      .then(ws => ws.run('$APM install --loglevel info'))
+      .tap(res => (result = res))
+    )
+    it('should be successful', function () {
+      expect(result.stderr).to.contain('npm info ok')
+    })
+    it('should install according to package.json', function () {
+      return workspace.readJson(`amd_modules/bar/package.json`).then(bar => {
+        expect(bar).to.have.property('name', 'bar')
+        expect(bar).to.have.property('version', '1.0.1')
+      })
+    })
+  })
   describe('installing another package', function () {
     var workspace
     before(() => Workspace

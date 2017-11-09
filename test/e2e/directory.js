@@ -9,9 +9,15 @@ describe('directory without package.json', function () {
   before(cb => registry.startServer(cb))
   after(cb => registry.stopServer(cb))
 
-  it('should print version', function () {
+  it('should print version via --version', function () {
     return Workspace.create({}).then(ws => ws
-      .run('$APM version')
+      .run('$APM --version')
+      .then(result => expect(result.stdout).to.contain(pkg.version)))
+  })
+
+  it('should print version via -v', function () {
+    return Workspace.create({}).then(ws => ws
+      .run('$APM --v')
       .then(result => expect(result.stdout).to.contain(pkg.version)))
   })
 
