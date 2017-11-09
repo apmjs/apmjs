@@ -39,7 +39,8 @@ function downloadPackage (url, dir) {
     .then(() => Promise.fromCallback(
       cb => tarball.extractTarball(tarfile, untardir, cb)
     ))
-    .then(() => fs.move(pkgdir, dir, {overwrite: true}))
+    .then(() => fs.remove(dir)) // move+override doesn't work for symlinks, so remove it first
+    .then(() => fs.move(pkgdir, dir))
 }
 
 let metaCache = {}
