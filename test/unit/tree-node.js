@@ -29,7 +29,6 @@ describe('TreeNode', function () {
   after(() => nock.cleanAll())
   beforeEach(() => {
     TreeNode.nodes = {}
-    TreeNode.referenceCounts = {}
     TreeNode.pending = {}
   })
 
@@ -162,29 +161,6 @@ describe('TreeNode', function () {
         expect(log.error).to.have.been.called
         expect(log.error.args[0][0]).to.equal(msg)
       })
-    })
-  })
-  describe('.dependencyList()', function () {
-    beforeEach(function () {
-      var root = new TreeNode({
-        version: '0.0.1',
-        name: 'root',
-        dependencies: { bar: '1.0.x', laa: '1.0.0' }
-      })
-      root.isRoot = true
-      return root.populateChildren()
-    })
-    it('should return all dependent packages', function () {
-      var nodes = TreeNode.dependencyList()
-      var keys = _.fromPairs(nodes.map(pkg => [pkg.name, pkg]))
-      expect(keys).to.have.property('bar')
-      expect(keys).to.have.property('laa')
-    })
-    it('should filter out root package', function () {
-      var nodes = TreeNode.dependencyList()
-      var keys = _.fromPairs(nodes.map(pkg => [pkg.name, pkg]))
-      expect(nodes).to.have.lengthOf(2)
-      expect(keys).to.not.have.property('root')
     })
   })
 })
