@@ -158,14 +158,6 @@ TreeNode.prototype.setPackage = function (pkg) {
   this.version = pkg.version
 }
 
-TreeNode.prototype.save = function (conf) {
-  var save = conf['save']
-  return Promise.all([
-    this.pkg.saveDependencies(this.children, save),
-    this.pkg.saveLocks(this.children)
-  ])
-}
-
 TreeNode.prototype.appendChild = function (child) {
   log.silly('appending child', child.toString(), 'to', this.toString())
 

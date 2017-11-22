@@ -72,6 +72,28 @@ describe('fresh project with package.json', function () {
       }))
   })
 
+  it('should write index.json', function () {
+    return Workspace
+    .create({
+      'package.json': JSON.stringify({
+        name: 'main',
+        amdDependencies: { bar: '1.0.0' }
+      })
+    })
+    .then(ws => ws
+      .run('$APM install')
+      .then(() => ws.readJson(`amd_modules/index.json`))
+      .then(index => expect(index).to.deep.equal(
+        [{
+          name: 'bar',
+          version: '1.0.0',
+          filepath: 'bar/index.js',
+          fullpath: ws.dirpath + '/amd_modules/bar/index.js'
+        }]
+      ))
+    )
+  })
+
   it('should write amd-lock.json', function () {
     return Workspace.create({
       'package.json': JSON.stringify({

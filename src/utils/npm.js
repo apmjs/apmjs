@@ -104,6 +104,11 @@ Object.defineProperties(npmDelegate, {
       return npm.localPrefix
     }
   },
+  'globalPrefix': {
+    get: () => {
+      return npm.globalPrefix
+    }
+  },
   'globalDir': {
     get: () => {
       return path.resolve(npm.globalDir, '../amd_modules')

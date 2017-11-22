@@ -42,11 +42,17 @@ Package.load = function (pathname) {
     .then(dirpath => Package.loadByPath(dirpath))
 }
 
+Package.createByDirectory = function (dir) {
+  var pkg = new Package({name: 'root'}, dir || process.cwd())
+  pkg.noPackageJSON = true
+  return pkg
+}
+
 Package.loadOrCreate = function (pathname) {
   return Package.load(pathname)
     .catch(err => {
       if (err.code === 'ENOENT') {
-        return new Package({name: 'root'}, process.cwd())
+        return Package.createByDirectory()
       }
       throw err
     })
@@ -103,12 +109,12 @@ Package.prototype.postInstall = function () {
   if (!this.pathname) {
     return Promise.reject(new Error('cannot run post-install, setDirname first'))
   }
-  var ps = this.respectBrowser()
+  var ps = this.replaceBrowserFiles()
   ps.push(this.writeAMDEntry())
   return Promise.all(ps)
 }
 
-Package.prototype.respectBrowser = function () {
+Package.prototype.replaceBrowserFiles = function () {
   var browser = this.descriptor.browser
   if (!_.isObject(browser)) {
     return []
@@ -173,12 +179,8 @@ Package.prototype.setPathname = function (pathname) {
   this.amdpath = pathname + '.js'
   this.pathname = pathname
   this.descriptorPath = path.resolve(pathname, 'package.json')
+  this.modulesPath = path.resolve(pathname, 'amd_modules')
   return this
-}
-
-Package.prototype.saveLocks = function () {
-  // TODO impl
-  return Promise.resolve()
 }
 
 Package.prototype.saveDependencies = function (nodes, save) {
@@ -214,6 +216,11 @@ Package.prototype.saveDependencies = function (nodes, save) {
       }
       log.info(SKIP_WRITING_MSG)
     })
+}
+
+Package.prototype.saveLocks = function () {
+  // this.children
+  return Promise.resolve()
 }
 
 Package.prototype.read = function () {
