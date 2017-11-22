@@ -6,9 +6,9 @@ const rMeta = /^\/([^/]+)$/
 const rTarball = /^\/([^/]+)\/-\/(.*)$/
 
 let server
+let port = process.env.REGISTRY_PORT || '8723'
 
 exports.startServer = function (cb) {
-  let port = process.env.REGISTRY_PORT || '8723'
   server = http.createServer(requestHandler)
   server.listen(port, cb)
 
@@ -22,8 +22,7 @@ exports.startServer = function (cb) {
         'Content-Type': 'application/json; charset=utf-8'
       })
       fs.readFile(filepath, 'utf8').then(content => {
-        content = content.replace(/apmjs\.com/g, `localhost:${port}`)
-        res.end(content)
+        res.end(exports.applyStubServer(content))
       })
     } else if ((match = req.url.match(rTarball))) {
       let name = decodeURIComponent(match[1])
@@ -38,6 +37,10 @@ exports.startServer = function (cb) {
       res.end()
     }
   }
+}
+
+exports.applyStubServer = function (url) {
+  return url.replace(/apmjs\.com/g, `localhost:${port}`)
 }
 
 exports.stopServer = function (cb) {

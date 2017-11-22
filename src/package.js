@@ -180,6 +180,7 @@ Package.prototype.setPathname = function (pathname) {
   this.pathname = pathname
   this.descriptorPath = path.resolve(pathname, 'package.json')
   this.modulesPath = path.resolve(pathname, 'amd_modules')
+  this.lockPath = path.resolve(pathname, 'amd-lock.json')
   return this
 }
 
@@ -218,9 +219,20 @@ Package.prototype.saveDependencies = function (nodes, save) {
     })
 }
 
-Package.prototype.saveLocks = function () {
-  // this.children
-  return Promise.resolve()
+Package.prototype.saveLocks = function (packages) {
+  var lock = {
+    name: this.name,
+    version: this.version,
+    dependencies: {}
+  }
+  packages.forEach(pkg => {
+    lock.dependencies[pkg.name] = {
+      version: pkg.version,
+      resolved: _.get(pkg, 'descriptor.dist.tarball'),
+      integrity: _.get(pkg, 'descriptor.dist.shasum')
+    }
+  })
+  return fs.writeJson(this.lockPath, lock, {spaces: 2})
 }
 
 Package.prototype.read = function () {

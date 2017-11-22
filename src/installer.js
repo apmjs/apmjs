@@ -14,7 +14,7 @@ function Installer (root, conf) {
   this.root = root
   this.pkg = this.root.pkg
   this.pathname = this.pkg.modulesPath
-  this.noPackageJSON = this.pkg.noPackageJSON
+  this.hasPackageJSON = !this.pkg.noPackageJSON
   this.save = conf && conf['save']
 }
 
@@ -26,7 +26,7 @@ Installer.createToGlobalRoot = function () {
 }
 
 Installer.globalInstall = function (name, semver) {
-  var installer = Installer.createToGlobalRoot()
+  let installer = Installer.createToGlobalRoot()
 
   return npm.getPackageMeta(name)
     .then(meta => Package.createMaxSatisfying(meta, semver))
@@ -46,26 +46,26 @@ Installer.prototype.install = function (packages) {
 }
 
 Installer.prototype.postInstall = function () {
-  var packages = resolver.getAllDependantPackages()
+  let packages = resolver.getAllDependantPackages()
   return Promise.all([
-    this.pkg.saveDependencies(this.root.children, this.save),
-    this.pkg.saveLocks(),
+    this.hasPackageJSON && this.pkg.saveDependencies(this.root.children, this.save),
+    this.pkg.saveLocks(packages),
     this.createIndex(packages)
   ])
 }
 
 Installer.prototype.createIndex = function (pkgs) {
-  var fields = ['name', 'version', 'filepath', 'fullpath']
-  var index = pkgs.map(pkg => _.pick(pkg, fields))
-  var file = path.resolve(this.pathname, 'index.json')
+  let fields = ['name', 'version', 'filepath', 'fullpath']
+  let index = pkgs.map(pkg => _.pick(pkg, fields))
+  let file = path.resolve(this.pathname, 'index.json')
   log.verbose('writing mapping', file)
   return fs.ensureDir(this.pathname)
   .then(() => fs.writeJson(file, index, {spaces: 2}))
 }
 
 Installer.prototype.installPackage = function (pkg) {
-  var url = pkg.descriptor.dist.tarball
-  var dir = path.resolve(this.pathname, pkg.name)
+  let url = pkg.descriptor.dist.tarball
+  let dir = path.resolve(this.pathname, pkg.name)
   return npm
     .downloadPackage(url, dir)
     .then(() => pkg.postInstall())

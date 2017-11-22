@@ -1,4 +1,5 @@
 const chai = require('chai')
+const stubRegistry = require('../stub/registry.js')
 const Workspace = require('../stub/workspace')
 const expect = chai.expect
 const registry = require('../stub/registry.js')
@@ -95,22 +96,28 @@ describe('fresh project with package.json', function () {
   })
 
   it('should write amd-lock.json', function () {
-    return Workspace.create({
+    return Workspace
+    .create({
       'package.json': JSON.stringify({
         name: 'main',
         version: '2.1.0',
         amdDependencies: { bar: '1.0.0' }
       })
-    }).then(ws => ws.run('$APM install')
+    })
+    .then(ws => ws.run('$APM install')
       .then(() => ws.readJson(`amd-lock.json`))
-      .then(lock => {
-        expect(lock.name).to.equal('main')
-        expect(lock.version).to.equal('2.1.0')
-        expect(lock).to.have.property('dependencies.bar')
-        expect(lock.dependencies.bar).to.have.property('resolved', 'http://apmjs.com/-/bar-1.0.0.tgz')
-        expect(lock.dependencies.bar).to.have.property('integrity', 'xxx')
-        expect(lock.dependencies.bar).to.have.property('version', '2.1.0')
+      .then(lock => expect(lock).to.deep.equal({
+        name: 'main',
+        version: '2.1.0',
+        dependencies: {
+          bar: {
+            version: '1.0.0',
+            resolved: stubRegistry.applyStubServer('http://apmjs.com/bar/-/bar-1.0.0.tgz'),
+            integrity: 'xxx'
+          }
+        }
       }))
+    )
   })
 
   it('should install the right dependency', function () {
