@@ -167,6 +167,13 @@ describe('installed project with package.json and node_modules', function () {
         expect(index.amdDependencies).to.have.property('foo', '^1.0.0')
       })
     })
+    it('should write amd-lock.json', function () {
+      return workspace.readJson(`amd-lock.json`).then(json => {
+        expect(json).to.have.property('name', 'index')
+        expect(json).to.have.nested.property('dependencies.bar.version', '1.0.0')
+        expect(json).to.have.nested.property('dependencies.foo.version', '1.0.0')
+      })
+    })
   })
   describe('install incompatible version', function () {
     let workspace
