@@ -21,6 +21,7 @@ describe('resolver', function () {
   beforeEach(() => {
     TreeNode.nodes = {}
     TreeNode.pending = {}
+    TreeNode.dependencyLocks = {}
   })
 
   describe('.getAllDependantPackages()', function () {

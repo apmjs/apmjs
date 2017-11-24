@@ -1,4 +1,5 @@
 'use strict'
+const stubRegistry = require('../stub/registry.js')
 const path = require('path')
 const fs = require('fs-extra')
 const chai = require('chai')
@@ -36,6 +37,126 @@ describe('installed project with package.json and node_modules', function () {
     it('should change package.json accordingly', function () {
       return workspace.readJson(`package.json`).then(index => {
         expect(index.amdDependencies).to.have.property('bar', '^1.0.1')
+      })
+    })
+  })
+  describe('locked dependencies', function () {
+    var workspace
+    before(() => Workspace
+      .create({
+        'package.json': `{
+          "name": "main",
+          "version": "2.1.0",
+          "amdDependencies": { "doo": "^1.0.0" }
+        }`,
+        'amd_modules/doo/package.json': `{
+          "name": "doo",
+          "version": "1.0.0",
+          "amdDependencies": { "bar": "~1.0.0" }
+        }`,
+        'amd_modules/bar/package.json': `{ "name": "bar", "version": "1.0.0" }`,
+        'amd-lock.json': `{"dependencies": {
+          "doo": {
+            "version": "1.0.0",
+            "integrity": "xxx"
+          },
+          "bar": {
+            "version": "1.0.0",
+            "integrity": "xxx"
+          }
+        }}`
+      })
+      .then(ws => (workspace = ws))
+      .then(ws => ws.run('$APM install'))
+    )
+
+    it('should lock direct dependency', function () {
+      return workspace.readJson(`amd_modules/doo/package.json`)
+      .then(pkg => {
+        expect(pkg).to.have.property('name', 'doo')
+        expect(pkg).to.have.property('version', '1.0.0')
+      })
+    })
+    it('should lock nested dependency', function () {
+      return workspace.readJson(`amd_modules/bar/package.json`)
+      .then(pkg => {
+        expect(pkg).to.have.property('name', 'bar')
+        expect(pkg).to.have.property('version', '1.0.0')
+      })
+    })
+
+    it('should leave amd-lock.json unchanged as long as satisfied', function () {
+      return workspace
+      .run('$APM install foo --save')
+      .then(() => workspace.readJson(`amd-lock.json`))
+      .then(lock => {
+        console.log(lock)
+        expect(lock).to.have.nested.property('dependencies.doo')
+        expect(lock).to.have.nested.property('dependencies.doo.version', '1.0.0')
+        expect(lock).to.have.nested.property('dependencies.bar')
+        expect(lock).to.have.nested.property('dependencies.bar.version', '1.0.0')
+      })
+    })
+  })
+  describe('not satisfied dependency in amd-lock.json', function () {
+    let workspace
+    let tarball = stubRegistry.applyStubServer('http://apmjs.com/bar/-/bar-1.0.0.tgz')
+    before(() => Workspace
+      .create({
+        'package.json': JSON.stringify({
+          name: 'main',
+          version: '2.1.0',
+          amdDependencies: { bar: '1.1.0' }
+        }),
+        'amd_modules/bar/package.json': '{ "name": "bar", "version": "1.0.0" }',
+        'amd-lock.json': `{ "dependencies": {
+            "bar": {
+              "version": "1.0.0",
+              "resolved": "${tarball}",
+              "integrity": "xxx"
+            }
+        }}`
+      })
+      .then(ws => (workspace = ws))
+    )
+
+    it('should install according to package.json', function () {
+      return workspace
+      .run('$APM install')
+      .then(() => workspace.readJson(`amd_modules/bar/package.json`))
+      .then(pkg => {
+        expect(pkg).to.have.property('name', 'bar')
+        expect(pkg).to.have.property('version', '1.1.0')
+      })
+    })
+
+    it('should update amd-lock.json on apmjs install', function () {
+      return workspace
+      .run('$APM install')
+      .then(() => workspace.readJson(`amd-lock.json`))
+      .then(pkg => {
+        expect(pkg).to.have.nested.property('dependencies.bar')
+        expect(pkg).to.have.nested.property('dependencies.bar.version', '1.1.0')
+      })
+    })
+
+    it('should update specified dependency in subsequent installs', function () {
+      return workspace
+      .run('$APM install foo --save')
+      .then(() => workspace.readJson(`amd_modules/bar/package.json`))
+      .then(pkg => {
+        expect(pkg).to.have.property('name', 'bar')
+        expect(pkg).to.have.property('version', '1.1.0')
+      })
+    })
+
+    it('should update amd-lock.json in subsequent installs', function () {
+      return workspace
+      .run('$APM install foo --save')
+      .then(() => workspace.readJson(`amd-lock.json`))
+      .then(pkg => {
+        expect(pkg).to.have.nested.property('dependencies.bar')
+        expect(pkg).to.have.nested.property('dependencies.bar.version', '1.1.0')
       })
     })
   })

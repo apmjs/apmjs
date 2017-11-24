@@ -73,6 +73,33 @@ describe('fresh project with package.json', function () {
       }))
   })
 
+  it('should respect to amd-lock.json', function () {
+    return Workspace
+    .create({
+      'package.json': JSON.stringify({
+        name: 'main',
+        version: '2.1.0',
+        amdDependencies: { bar: '~1.0.0' }
+      }),
+      'amd-lock.json': JSON.stringify({
+        dependencies: {
+          bar: {
+            version: '1.0.0',
+            resolved: stubRegistry.applyStubServer('http://apmjs.com/bar/-/bar-1.0.0.tgz'),
+            integrity: 'xxx'
+          }
+        }
+      })
+    })
+    .then(ws => ws.run('$APM install')
+      .then(() => ws.readJson(`amd_modules/bar/package.json`))
+      .then(pkg => {
+        expect(pkg).to.have.property('name', 'bar')
+        expect(pkg).to.have.property('version', '1.0.0')
+      })
+    )
+  })
+
   it('should write index.json', function () {
     return Workspace
     .create({

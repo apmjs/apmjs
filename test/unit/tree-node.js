@@ -30,6 +30,7 @@ describe('TreeNode', function () {
   beforeEach(() => {
     TreeNode.nodes = {}
     TreeNode.pending = {}
+    TreeNode.dependencyLocks = {}
   })
 
   describe('new TreeNode()', function () {

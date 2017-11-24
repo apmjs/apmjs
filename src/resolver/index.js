@@ -1,11 +1,18 @@
 'use strict'
 const TreeNode = require('./tree-node.js')
+const log = require('npmlog')
 const _ = require('lodash')
 
 function loadRoot (pkg) {
-  let root = new TreeNode(pkg)
-  root.isRoot = true
-  return root.populateChildren()
+  log.verbose('loading local tree...')
+  var ret = pkg.noPackageJSON
+    ? Promise.resolve()
+    : TreeNode.loadLockfile(pkg.lockfilePath)
+  return ret.then(() => {
+    let root = new TreeNode(pkg)
+    root.isRoot = true
+    return root.populateChildren()
+  })
 }
 
 function getAllDependencies () {

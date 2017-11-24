@@ -1,0 +1,25 @@
+{
+  "name": "doo",
+  "versions": {
+    "1.0.0": {
+      "name": "doo",
+      "version": "1.0.0",
+      "amdDependencies": {
+        "bar": "~1.0.0"
+      },
+      "dist": {
+        "tarball": "http://apmjs.com/doo/-/doo-1.0.0.tgz"
+      }
+    },
+    "1.0.1": {
+      "name": "doo",
+      "version": "1.0.1",
+      "amdDependencies": {
+        "bar": "^1.1.0"
+      },
+      "dist": {
+        "tarball": "http://apmjs.com/doo/-/doo-1.0.1.tgz"
+      }
+    }
+  }
+}

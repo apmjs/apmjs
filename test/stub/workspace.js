@@ -33,6 +33,11 @@ Workspace.prototype.readJson = function (filename) {
   return fs.readJson(file)
 }
 
+Workspace.prototype.writeJson = function (filename, json) {
+  let file = path.resolve(this.dirpath, filename)
+  return fs.writeJson(file, json)
+}
+
 Workspace.prototype.readJsonSync = function (filename) {
   let file = path.resolve(this.dirpath, filename)
   return fs.readJsonSync(file)

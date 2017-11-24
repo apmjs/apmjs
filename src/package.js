@@ -180,7 +180,7 @@ Package.prototype.setPathname = function (pathname) {
   this.pathname = pathname
   this.descriptorPath = path.resolve(pathname, 'package.json')
   this.modulesPath = path.resolve(pathname, 'amd_modules')
-  this.lockPath = path.resolve(pathname, 'amd-lock.json')
+  this.lockfilePath = path.resolve(pathname, 'amd-lock.json')
   return this
 }
 
@@ -232,7 +232,7 @@ Package.prototype.saveLocks = function (packages) {
       integrity: _.get(pkg, 'descriptor.dist.shasum')
     }
   })
-  return fs.writeJson(this.lockPath, lock, {spaces: 2})
+  return fs.writeJson(this.lockfilePath, lock, {spaces: 2})
 }
 
 Package.prototype.read = function () {

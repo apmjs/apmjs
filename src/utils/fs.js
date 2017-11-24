@@ -1,9 +1,11 @@
 const fs = require('fs-extra')
+const log = require('npmlog')
 const Promise = require('bluebird')
 const path = require('path')
 
 function findUp (target, current) {
   current = current || process.cwd()
+  log.silly('finding', target, 'from', current, '...')
   var file = path.resolve(current, target)
   return Promise.resolve(fs.pathExists(file))
     .then(exist => {
@@ -20,4 +22,11 @@ function findUp (target, current) {
     })
 }
 
-module.exports = {findUp}
+function catchNoEntry (err) {
+  if (err.code === 'ENOENT') {
+    return
+  }
+  throw err
+}
+
+module.exports = {findUp, catchNoEntry}

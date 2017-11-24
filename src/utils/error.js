@@ -1,6 +1,15 @@
 const util = require('util')
 const http = require('http')
 
+function createFrom (err, msg) {
+  msg = msg || err.message || 'Unkwown Error'
+  var error = new Error(msg)
+  error.stack = `${error.stack}
+From previous error:
+${err.stack}`
+  return error
+}
+
 function PackageNotFound (name, parent) {
   Error.captureStackTrace(this, this.constructor)
   this.name = this.constructor.name
@@ -51,4 +60,4 @@ function HTTP (status) {
 }
 util.inherits(HTTP, Error)
 
-module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName, InvalidPackageMeta, HTTP}
+module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName, InvalidPackageMeta, HTTP, createFrom}
