@@ -1,8 +1,0 @@
-{
-  "author": "harttle <harttle@harttlem>",
-  "name": "doo",
-  "version": "1.0.0",
-  "amdDependencies": {
-    "bar": "^1.1.0"
-  }
-}

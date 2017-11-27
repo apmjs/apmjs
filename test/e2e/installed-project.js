@@ -90,7 +90,8 @@ describe('installed project with package.json and node_modules', function () {
       .run('$APM install foo --save')
       .then(() => workspace.readJson(`amd-lock.json`))
       .then(lock => {
-        console.log(lock)
+        expect(lock).to.have.nested.property('dependencies.foo')
+        expect(lock).to.have.nested.property('dependencies.foo.version', '1.0.0')
         expect(lock).to.have.nested.property('dependencies.doo')
         expect(lock).to.have.nested.property('dependencies.doo.version', '1.0.0')
         expect(lock).to.have.nested.property('dependencies.bar')
@@ -298,39 +299,51 @@ describe('installed project with package.json and node_modules', function () {
   })
   describe('install incompatible version', function () {
     let workspace
-    let result
     before(() => Workspace
       .create({
         'package.json': JSON.stringify({
           name: 'index',
           amdDependencies: { coo: '1.0.0' }
         }),
-        'amd_modules/bar/package.json': JSON.stringify({
-          name: 'bar',
-          version: '1.0.0'
-        })
+        'amd-lock.json': '{"dependencies":{"bar": {"version": "1.0.0"}, "coo": {"vesion": "1.0.0"}}}',
+        'amd_modules/bar/package.json': '{"name": "bar", "version": "1.0.0"}',
+        'amd_modules/coo/package.json': '{"name": "coo", "version": "1.0.0", "amdDependencies": {"bar": "<=1.0.0"}}'
       })
       .tap(ws => (workspace = ws))
-      .then(ws => ws.run('$APM install bar@1.1.0 --loglevel silly'))
-      .then(x => (result = x))
     )
     it('should be successful', function () {
-      return workspace.readJson(`amd_modules/bar/package.json`).then(bar => {
-        expect(bar).to.have.property('name', 'bar')
-        expect(bar).to.have.property('version', '1.1.0')
-      })
+      return workspace.run('$APM install bar@1.1.0')
+        .then(() => workspace.readJson(`amd_modules/bar/package.json`))
+        .then(bar => {
+          expect(bar).to.have.property('name', 'bar')
+          expect(bar).to.have.property('version', '1.1.0')
+        })
     })
     it('should print incompatible error', function () {
-      var msg = 'version conflict: upgrade bar@<=1.0.0 (required by coo@1.0.0) to match 1.1.0 (required by index)'
-      return expect(result.stderr).to.include(msg)
+      return workspace.run('$APM install bar@1.1.0')
+        .then(result => {
+          var msg = 'version conflict: upgrade bar@<=1.0.0 (required by coo@1.0.0) to match 1.1.0 (required by index)'
+          expect(result.stderr).to.include(msg)
+        })
     })
     it('should not change package.json', function () {
-      return workspace.readJson(`package.json`).then(index => {
-        expect(index.amdDependencies).to.not.have.property('bar')
-      })
+      return workspace.run('$APM install bar@1.1.0')
+        .then(() => workspace.readJson(`package.json`))
+        .then(index => {
+          expect(index.amdDependencies).to.not.have.property('bar')
+        })
+    })
+    it('should not change amd-lock.json', function () {
+      return workspace.run('$APM install doo@1.0.1')
+        .then(() => workspace.readJson(`amd-lock.json`))
+        .then(json => {
+          expect(json).to.have.nested.property('dependencies.bar.version', '1.0.0')
+          expect(json).to.have.nested.property('dependencies.coo.version', '1.0.0')
+          expect(json).to.not.have.nested.property('dependencies.doo')
+        })
     })
   })
-  describe('install incompatible version with save', function () {
+  describe('install incompatible version with --save', function () {
     var workspace
     before(() => Workspace
       .create({

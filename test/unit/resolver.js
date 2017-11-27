@@ -24,7 +24,7 @@ describe('resolver', function () {
     TreeNode.dependencyLocks = {}
   })
 
-  describe('.getAllDependantPackages()', function () {
+  describe('.getDependantPackages()', function () {
     beforeEach(function () {
       var root = new TreeNode({
         version: '0.0.1',
@@ -35,13 +35,13 @@ describe('resolver', function () {
       return root.populateChildren()
     })
     it('should return all dependent packages', function () {
-      var nodes = resolver.getAllDependantPackages()
+      var nodes = resolver.getDependantPackages()
       var keys = _.fromPairs(nodes.map(pkg => [pkg.name, pkg]))
       expect(keys).to.have.property('bar')
       expect(keys).to.have.property('laa')
     })
     it('should filter out root package', function () {
-      var nodes = resolver.getAllDependantPackages()
+      var nodes = resolver.getDependantPackages()
       var keys = _.fromPairs(nodes.map(pkg => [pkg.name, pkg]))
       expect(nodes).to.have.lengthOf(2)
       expect(keys).to.not.have.property('root')

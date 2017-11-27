@@ -10,12 +10,13 @@ const fs = require('fs-extra')
 const npm = require('./utils/npm.js')
 const path = require('path')
 
-function Installer (root, conf) {
+function Installer (root, options) {
+  options = options || {}
   this.root = root
   this.pkg = this.root.pkg
   this.pathname = this.pkg.modulesPath
   this.hasPackageJSON = !this.pkg.noPackageJSON
-  this.save = conf && conf['save']
+  this.save = options.save
 }
 
 Installer.createToGlobalRoot = function () {
@@ -46,11 +47,10 @@ Installer.prototype.install = function (packages) {
 }
 
 Installer.prototype.postInstall = function () {
-  let packages = resolver.getAllDependantPackages()
   return Promise.all([
     this.hasPackageJSON && this.pkg.saveDependencies(this.root.children, this.save),
-    this.pkg.saveLocks(packages),
-    this.createIndex(packages)
+    this.pkg.saveLocks(resolver.getSavedPackages()),
+    this.createIndex(resolver.getDependantPackages())
   ])
 }
 

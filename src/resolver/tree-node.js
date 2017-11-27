@@ -15,6 +15,8 @@ function TreeNode (pkg) {
   assert(pkg.name, 'package name is required')
   this.name = pkg.name
   this.parents = {}
+  this.isRoot = false
+  this.saved = false
   this.children = {}
   this.referenceCount = 0
   this.setPackage(pkg)
@@ -56,12 +58,12 @@ TreeNode.prototype.printTree = function () {
   console.log(str)
 }
 
-TreeNode.prototype.updateOrInstallDependency = function (name, semver) {
+TreeNode.prototype.updateOrInstallDependency = function (name, semver, save) {
   log.silly(`update or install dependency ${name}@${semver}`)
   if (this.children[name]) {
     this.children[name].remove(this)
   }
-  return this.addDependency(name, semver, true)
+  return this.addDependency(name, semver, {update: true, saved: save})
 }
 
 // This should be side-effect free, race condition happens
@@ -102,24 +104,27 @@ TreeNode.prototype.createRemoteNode = function (name, semver) {
     })
 }
 
-TreeNode.prototype.addDependency = function (name, semver, update) {
+TreeNode.prototype.addDependency = function (name, semver, options) {
+  options = options || {}
   log.silly(`add dependency: ${name}@${semver}`)
   return enque(name, () => {
     let node
     if ((node = TreeNode.nodes[name])) {
       log.silly(`reusing dependency in tree: ${node}`)
       var compatible = node.checkConformance(semver, this)
-      if (!update || compatible) {
+      if (!options.update || compatible) {
         this.appendChild(node, semver)
+        node.saved = node.saved || options.saved
         return Promise.resolve(node)
       }
     }
     return Promise.resolve()
-    .then(update => update ? null : this.createLocalNode(name, semver))
+    .then(() => options.update ? null : this.createLocalNode(name, semver))
     .then(node => node || this.createRemoteNode(name, semver))
     .then(node => {
-      node.update = update
+      node.update = options.update
       this.appendChild(node, semver)
+      node.saved = node.saved || options.saved
       return node.populateChildren().then(() => node)
     })
   })
@@ -154,7 +159,7 @@ TreeNode.prototype.populateChildren = function () {
     if (lock && Version.satisfies(lock.version, semver)) {
       semver = lock.version
     }
-    return this.addDependency(name, semver)
+    return this.addDependency(name, semver, {saved: this.saved})
   }))
   .then(() => this)
 }

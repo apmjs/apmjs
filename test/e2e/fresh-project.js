@@ -140,6 +140,7 @@ describe('fresh project with package.json', function () {
           bar: {
             version: '1.0.0',
             resolved: stubRegistry.applyStubServer('http://apmjs.com/bar/-/bar-1.0.0.tgz'),
+            author: 'harttle <harttle@harttle.com>',
             integrity: 'xxx'
           }
         }

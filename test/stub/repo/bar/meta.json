@@ -4,6 +4,7 @@
     "1.0.0": {
       "name": "bar",
       "version": "1.0.0",
+      "author": "harttle <harttle@harttle.com>",
       "amdDependencies": {},
       "dist": {
         "shasum": "xxx",

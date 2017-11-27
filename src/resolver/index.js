@@ -11,16 +11,21 @@ function loadRoot (pkg) {
   return ret.then(() => {
     let root = new TreeNode(pkg)
     root.isRoot = true
+    root.saved = true
     return root.populateChildren()
   })
 }
 
-function getAllDependencies () {
+function getDependencies () {
   return _.filter(TreeNode.nodes, node => !node.isRoot)
 }
 
-function getAllDependantPackages () {
-  return getAllDependencies().map(node => node.pkg)
+function getDependantPackages () {
+  return getDependencies().map(node => node.pkg)
 }
 
-module.exports = {loadRoot, getAllDependencies, getAllDependantPackages}
+function getSavedPackages () {
+  return getDependencies().filter(node => node.saved).map(node => node.pkg)
+}
+
+module.exports = {loadRoot, getDependencies, getDependantPackages, getSavedPackages}

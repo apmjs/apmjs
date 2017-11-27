@@ -7,15 +7,16 @@ const Installer = require('../installer.js')
 const Package = require('../package.js')
 
 function install (dependencies, errorHandler, conf) {
+  let save = conf['save']
   return Package.loadOrCreate()
     .then(pkg => resolver.loadRoot(pkg))
     .then(root => {
-      let installer = new Installer(root, conf)
+      let installer = new Installer(root, {save})
       return Promise.map(dependencies, decl => {
         let ret = version.parseDependencyDeclaration(decl)
-        return root.updateOrInstallDependency(ret.name, ret.semver)
+        return root.updateOrInstallDependency(ret.name, ret.semver, save)
       })
-      .then(() => resolver.getAllDependantPackages())
+      .then(() => resolver.getDependantPackages())
       .then(pkgs => installer.install(pkgs))
       .then(() => root.printTree())
     })

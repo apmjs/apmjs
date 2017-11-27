@@ -228,6 +228,7 @@ Package.prototype.saveLocks = function (packages) {
   packages.forEach(pkg => {
     lock.dependencies[pkg.name] = {
       version: pkg.version,
+      author: _.get(pkg, 'descriptor.author'),
       resolved: _.get(pkg, 'descriptor.dist.tarball'),
       integrity: _.get(pkg, 'descriptor.dist.shasum')
     }
