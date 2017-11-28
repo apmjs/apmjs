@@ -1,4 +1,5 @@
 'use strict'
+const path = require('path')
 const fs = require('fs-extra')
 const chai = require('chai')
 const Workspace = require('../stub/workspace')
@@ -162,6 +163,39 @@ describe('linking', function () {
           expect(bar).to.have.property('version', '1.1.0')
         })
       )
+    })
+  })
+  describe('install upon linked dependencies', function () {
+    let workspace
+    let result
+    before(() => Workspace
+      .create({
+        'package.json': JSON.stringify({
+          name: 'index',
+          amdDependencies: { bar: '1.0.1' }
+        }),
+        'amd_modules': {
+          '.gitignore': 'placeholder '
+        },
+        'foo/bar': 'BAR'
+      })
+      .tap(ws => {
+        workspace = ws
+        let file = path.resolve(ws.dirpath, 'foo')
+        let link = path.resolve(ws.dirpath, 'amd_modules/bar')
+        return fs.symlink(file, link)
+      })
+      .then(() => workspace.run('$APM install --loglevel info'))
+      .tap(res => (result = res))
+    )
+    it('should be successful', function () {
+      expect(result.stderr).to.contain('npm info ok')
+    })
+    it('should install according to package.json', function () {
+      return workspace.readJson(`amd_modules/bar/package.json`).then(bar => {
+        expect(bar).to.have.property('name', 'bar')
+        expect(bar).to.have.property('version', '1.0.1')
+      })
     })
   })
 })

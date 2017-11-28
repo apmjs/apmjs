@@ -109,9 +109,18 @@ Package.prototype.postInstall = function () {
   if (!this.pathname) {
     return Promise.reject(new Error('cannot run post-install, setDirname first'))
   }
-  var ps = this.replaceBrowserFiles()
-  ps.push(this.writeAMDEntry())
-  return Promise.all(ps)
+  return Promise.all([
+    this.replaceBrowserFiles(),
+    this.populatePackageJson(),
+    this.writeAMDEntry()
+  ])
+}
+
+Package.prototype.populatePackageJson = function () {
+  let distFields = _.pick(this.descriptor, ['author', 'dist'])
+  return fs.readJson(this.descriptorPath)
+    .then(json => _.assign(json, distFields))
+    .then(json => fs.writeJson(this.descriptorPath, json, {spaces: 2}))
 }
 
 Package.prototype.replaceBrowserFiles = function () {
@@ -119,7 +128,7 @@ Package.prototype.replaceBrowserFiles = function () {
   if (!_.isObject(browser)) {
     return []
   }
-  return _.map(browser, (replacer, target) => {
+  return Promise.map(browser, (replacer, target) => {
     var targetPath = path.resolve(this.pathname, target)
     if (replacer === false) {
       return fs.writeFile(targetPath, 'define(function(){})')
@@ -203,7 +212,7 @@ Package.prototype.saveDependencies = function (nodes, save) {
       let deps = {}
       _.forOwn(nodes, node => {
         if (save || this.dependencies[node.name]) {
-          deps[node.name] = node.update
+          deps[node.name] = node.listed
             ? Version.versionToSave(node.version)
             : this.dependencies[node.name]
         }
@@ -219,19 +228,19 @@ Package.prototype.saveDependencies = function (nodes, save) {
     })
 }
 
-Package.prototype.saveLocks = function (packages) {
+Package.prototype.saveLocks = function (packages, dependencyLocks) {
   var lock = {
     name: this.name,
     version: this.version,
     dependencies: {}
   }
   packages.forEach(pkg => {
-    lock.dependencies[pkg.name] = {
-      version: pkg.version,
-      author: _.get(pkg, 'descriptor.author'),
-      resolved: _.get(pkg, 'descriptor.dist.tarball'),
-      integrity: _.get(pkg, 'descriptor.dist.shasum')
-    }
+    let author = _.get(pkg, 'descriptor.author') ||
+      _.get(dependencyLocks, `${pkg.name}.author`)
+    let integrity = _.get(pkg, 'descriptor.dist.shasum') ||
+      _.get(dependencyLocks, `${pkg.name}.integrity`)
+    let version = pkg.version
+    lock.dependencies[pkg.name] = { version, author, integrity }
   })
   return fs.writeJson(this.lockfilePath, lock, {spaces: 2})
 }

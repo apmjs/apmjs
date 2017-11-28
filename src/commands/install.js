@@ -14,7 +14,7 @@ function install (dependencies, errorHandler, conf) {
       let installer = new Installer(root, {save})
       return Promise.map(dependencies, decl => {
         let ret = version.parseDependencyDeclaration(decl)
-        return root.updateOrInstallDependency(ret.name, ret.semver, save)
+        return root.installDependency(ret.name, ret.semver, save)
       })
       .then(() => resolver.getDependantPackages())
       .then(pkgs => installer.install(pkgs))

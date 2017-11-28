@@ -1,0 +1,23 @@
+{
+  "name": "eow",
+  "versions": {
+    "1.0.0": {
+      "name": "eow",
+      "version": "1.0.0",
+      "author": "harttle <harttle@harttle.com>",
+      "amdDependencies": {},
+      "dist": {
+        "shasum": "xxx",
+        "tarball": "http://apmjs.com/eow/-/eow-1.0.0.tgz"
+      }
+    },
+    "1.1.0": {
+      "name": "eow",
+      "version": "1.1.0",
+      "amdDependencies": {},
+      "dist": {
+        "tarball": "http://apmjs.com/eow/-/eow-1.1.0.tgz"
+      }
+    }
+  }
+}

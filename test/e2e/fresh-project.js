@@ -1,5 +1,4 @@
 const chai = require('chai')
-const stubRegistry = require('../stub/registry.js')
 const Workspace = require('../stub/workspace')
 const expect = chai.expect
 const registry = require('../stub/registry.js')
@@ -85,7 +84,6 @@ describe('fresh project with package.json', function () {
         dependencies: {
           bar: {
             version: '1.0.0',
-            resolved: stubRegistry.applyStubServer('http://apmjs.com/bar/-/bar-1.0.0.tgz'),
             integrity: 'xxx'
           }
         }
@@ -139,7 +137,6 @@ describe('fresh project with package.json', function () {
         dependencies: {
           bar: {
             version: '1.0.0',
-            resolved: stubRegistry.applyStubServer('http://apmjs.com/bar/-/bar-1.0.0.tgz'),
             author: 'harttle <harttle@harttle.com>',
             integrity: 'xxx'
           }

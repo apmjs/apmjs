@@ -3,7 +3,8 @@ const TreeNode = require('./tree-node.js')
 const log = require('npmlog')
 const _ = require('lodash')
 
-function loadRoot (pkg) {
+function loadRoot (pkg, options) {
+  options = options || {}
   log.verbose('loading local tree...')
   var ret = pkg.noPackageJSON
     ? Promise.resolve()
@@ -12,7 +13,7 @@ function loadRoot (pkg) {
     let root = new TreeNode(pkg)
     root.isRoot = true
     root.saved = true
-    return root.populateChildren()
+    return root.populateChildren(options)
   })
 }
 

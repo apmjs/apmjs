@@ -1,35 +1,25 @@
-const debug = require('debug')('apmjs:commands:install')
+'use strict'
+const debug = require('debug')('apmjs:commands:update')
 const version = require('../resolver/version.js')
-const _ = require('lodash')
 const Promise = require('bluebird')
 const resolver = require('../resolver/index.js')
 const Installer = require('../installer.js')
-const TreeNode = require('../resolver/tree-node.js')
 const Package = require('../package.js')
 
-module.exports = function (dependencies, errorHandler, conf) {
-  var installer = new Installer()
+module.exports = function (dependencies, errorHandler) {
   return Package.loadOrCreate()
-    .then(pkg => resolver.loadRoot(pkg))
+    .then(pkg => resolver.loadRoot(pkg, {
+      update: dependencies.length === 0
+    }))
     .then(root => {
+      let installer = new Installer(root, {save: true})
       return Promise.map(dependencies, decl => {
-        var ret = version.parseDependencyDeclaration(decl)
-        return root.updateOrInstallDependency(ret.name, ret.semver)
+        let ret = version.parseDependencyDeclaration(decl)
+        return root.updateOrInstallDependency(ret.name, ret.semver, true)
       })
-      .then(() => TreeNode.dependencyList())
+      .then(() => resolver.getDependantPackages())
       .then(pkgs => installer.install(pkgs))
-      .then(() => root.save(conf))
-      .then(() => {
-        if (_.size(dependencies)) {
-          _.forEach(dependencies, decl => {
-            var ret = version.parseDependencyDeclaration(decl)
-            TreeNode.nodes[ret.name].printTree()
-          })
-        } else {
-          root.printTree()
-        }
-      })
+      .then(() => root.printTree())
     })
-    .then(() => errorHandler())
-    .catch(err => errorHandler(err))
+    .then(() => errorHandler(), err => errorHandler(err))
 }

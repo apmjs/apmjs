@@ -68,7 +68,14 @@ TreeNode.prototype.updateOrInstallDependency = function (name, semver, save) {
   return this.addDependency(name, semver, {update: true, saved: save})
 }
 
-// This should be side-effect free, race condition happens
+TreeNode.prototype.installDependency = function (name, semver, save) {
+  log.silly(`install dependency ${name}@${semver}`)
+  if (this.children[name]) {
+    this.children[name].remove(this)
+  }
+  return this.addDependency(name, semver, {listed: true, saved: save})
+}
+
 TreeNode.prototype.tryCreateLocalNode = function (name, semver) {
   log.silly(`creating local node for ${name}@${semver}`)
   return Package.loadModule(name)
@@ -90,7 +97,6 @@ TreeNode.prototype.tryCreateLocalNode = function (name, semver) {
     })
 }
 
-// This should be side-effect free, race condition happens
 TreeNode.prototype.createRemoteNode = function (name, semver) {
   log.silly(`creating remote node for ${name}@${semver}`)
   return npm
@@ -106,26 +112,36 @@ TreeNode.prototype.createRemoteNode = function (name, semver) {
     })
 }
 
+function fetchSource (satisfies, options) {
+  if (options.update) {
+    return 'remote'
+  }
+  if (options.listed) {
+    return satisfies ? 'installed' : 'remote'
+  }
+  return satisfies ? 'installed' : 'fail'
+}
+
 TreeNode.prototype.addDependency = function (name, semver, options) {
   options = options || {}
-  log.silly(`add dependency: ${name}@${semver}`)
+  log.silly(`add dependency: ${name}@${semver} with options:`, options)
   return enque(name, () => {
     let installed = TreeNode.nodes[name]
 
     if (installed) {
-      var compatible = installed.checkConformance(semver, this)
-
-      if (compatible) {
-        this.appendChild(installed)
-        if (options.saved) {
-          installed.saved = true
-        }
-        return Promise.resolve(installed)
-      } else if (!options.update) {
-        let node = new TreeNode({name: name, version: semver, placeholder: true})
-        node.pkg.status = 'not installed'
-        this.appendChild(node)
-        return Promise.resolve(node)
+      let satisfies = installed.checkConformance(semver, this)
+      switch (fetchSource(satisfies, options)) {
+        case 'installed':
+          this.appendChild(installed)
+          if (options.saved) {
+            installed.saved = true
+          }
+          return Promise.resolve(installed)
+        case 'fail':
+          let node = new TreeNode({name: name, version: semver, placeholder: true})
+          node.pkg.status = 'not installed'
+          this.appendChild(node)
+          return Promise.resolve(node)
       }
     }
 
@@ -138,7 +154,7 @@ TreeNode.prototype.addDependency = function (name, semver, options) {
     })
     .then(node => node || this.createRemoteNode(name, semver))
     .then(node => {
-      node.update = options.update
+      node.listed = options.listed
       this.appendChild(node)
       if (installed) {
         installed.pkg.status = 'removed'
@@ -170,17 +186,18 @@ TreeNode.prototype.checkConformance = function (semver, parent) {
   return false
 }
 
-TreeNode.prototype.populateChildren = function () {
+TreeNode.prototype.populateChildren = function (options) {
+  options = options || {}
   log.silly(`populating children for ${this}:`, _.keys(this.pkg.dependencies))
 
   return Promise
   .all(_.map(this.pkg.dependencies, (semver, name) => {
     var lock = TreeNode.dependencyLocks[name]
 
-    if (lock && Version.satisfies(lock.version, semver)) {
+    if (!options.update && lock && Version.satisfies(lock.version, semver)) {
       semver = lock.version
     }
-    return this.addDependency(name, semver, {saved: this.saved})
+    return this.addDependency(name, semver, {saved: this.saved, update: options.update})
   }))
   .then(() => this)
 }
