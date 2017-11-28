@@ -155,7 +155,7 @@ describe('fresh project with package.json', function () {
         amdDependencies: { coo: '1.0.0' }
       })
     }).then(ws => ws.run('$APM install')
-      .then(result => expect(result.stdout).to.equal('main\n└─┬ coo@1.0.0 (newly installed)\n  └── bar@1.0.0 (newly installed)\n'))
+      .then(result => expect(result.stdout).to.equal('main\n└─┬ coo@1.0.0 (installed)\n  └── bar@1.0.0 (installed)\n'))
       .then(() => ws.readJson(`amd_modules/coo/package.json`))
       .then(foo => expect(foo).to.have.property('version', '1.0.0'))
       .then(() => ws.readJson(`amd_modules/bar/package.json`))

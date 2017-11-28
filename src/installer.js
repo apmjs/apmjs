@@ -42,7 +42,7 @@ Installer.prototype.install = function (packages) {
     .map(packages, pkg => pkg.setDirname(this.pathname))
     .filter(pkg => pkg.hasInstalled(this.pathname).then(x => !x))
     .map(pkg => this.installPackage(pkg))
-    .map(pkg => (pkg.newlyInstalled = true))
+    .map(pkg => (pkg.status = 'installed'))
     .then(() => this.postInstall())
 }
 

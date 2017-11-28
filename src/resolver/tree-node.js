@@ -20,7 +20,9 @@ function TreeNode (pkg) {
   this.children = {}
   this.referenceCount = 0
   this.setPackage(pkg)
-  TreeNode.nodes[this.name] = this
+  if (!pkg.placeholder) {
+    TreeNode.nodes[this.name] = this
+  }
   log.silly(`${this} created`)
 }
 
@@ -42,8 +44,8 @@ TreeNode.prototype.toPlainTree = function () {
     name: this.toString(),
     children: _.map(this.children, child => child.toPlainTree())
   }
-  if (this.pkg.newlyInstalled) {
-    obj.name += ' (newly installed)'
+  if (this.pkg.status) {
+    obj.name += ` (${this.pkg.status})`
   }
   return obj
 }
@@ -67,7 +69,7 @@ TreeNode.prototype.updateOrInstallDependency = function (name, semver, save) {
 }
 
 // This should be side-effect free, race condition happens
-TreeNode.prototype.createLocalNode = function (name, semver) {
+TreeNode.prototype.tryCreateLocalNode = function (name, semver) {
   log.silly(`creating local node for ${name}@${semver}`)
   return Package.loadModule(name)
     .then(pkg => {
@@ -108,23 +110,37 @@ TreeNode.prototype.addDependency = function (name, semver, options) {
   options = options || {}
   log.silly(`add dependency: ${name}@${semver}`)
   return enque(name, () => {
-    let node
-    if ((node = TreeNode.nodes[name])) {
-      log.silly(`reusing dependency in tree: ${node}`)
-      var compatible = node.checkConformance(semver, this)
-      if (!options.update || compatible) {
-        this.appendChild(node, semver)
-        node.saved = node.saved || options.saved
+    let installed = TreeNode.nodes[name]
+
+    if (installed) {
+      var compatible = installed.checkConformance(semver, this)
+
+      if (compatible) {
+        this.appendChild(installed)
+        if (options.saved) {
+          installed.saved = true
+        }
+        return Promise.resolve(installed)
+      } else if (!options.update) {
+        let node = new TreeNode({name: name, version: semver, placeholder: true})
+        node.pkg.status = 'not installed'
+        this.appendChild(node)
         return Promise.resolve(node)
       }
     }
+
     return Promise.resolve()
-    .then(() => options.update ? null : this.createLocalNode(name, semver))
+    .then(() => options.update ? null : this.tryCreateLocalNode(name, semver))
     .then(node => node || this.createRemoteNode(name, semver))
     .then(node => {
       node.update = options.update
       this.appendChild(node, semver)
-      node.saved = node.saved || options.saved
+      if (installed) {
+        installed.pkg.status = 'removed'
+      }
+      if (options.saved) {
+        node.saved = options.saved
+      }
       return node.populateChildren().then(() => node)
     })
   })

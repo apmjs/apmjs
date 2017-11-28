@@ -268,14 +268,14 @@ describe('installed project with package.json and node_modules', function () {
       .then(ws => ws.run('$APM install foo@1.0.0 --save'))
       .tap(res => (result = res))
     )
-    it('should make install successful', function () {
+    it('should install successful', function () {
       return workspace.readJson(`amd_modules/foo/package.json`).then(bar => {
         expect(bar).to.have.property('name', 'foo')
         expect(bar).to.have.property('version', '1.0.0')
       })
     })
     it('should output installed packages', function () {
-      expect(result.stdout).to.equal('index\n├── bar@1.0.0\n└── foo@1.0.0 (newly installed)\n')
+      expect(result.stdout).to.equal('index\n├── bar@1.0.0\n└── foo@1.0.0 (installed)\n')
     })
     it('should retain others', function () {
       return workspace.readJson(`amd_modules/bar/package.json`).then(bar => {
@@ -297,6 +297,41 @@ describe('installed project with package.json and node_modules', function () {
       })
     })
   })
+  describe('install compatible version', function () {
+    let workspace
+    let result
+    before(() => Workspace
+      .create({
+        'package.json': '{"name": "index", "amdDependencies": { "bar": "1.1.0" }}',
+        'amd_modules/bar/package.json': '{"name": "bar", "version": "1.1.0"}'
+      })
+      .tap(ws => (workspace = ws))
+      .then(() => workspace.run('$APM install doo@1.0.1'))
+      .tap(res => (result = res))
+    )
+    it('should be successful', function () {
+      return workspace.readJson(`amd_modules/doo/package.json`).then(bar => {
+        expect(bar).to.have.property('name', 'doo')
+        expect(bar).to.have.property('version', '1.0.1')
+      })
+    })
+    it('should leave already installed untouched', function () {
+      return workspace.readJson(`amd_modules/bar/package.json`).then(bar => {
+        expect(bar).to.have.property('name', 'bar')
+        expect(bar).to.have.property('version', '1.1.0')
+      })
+    })
+    it('should print installed packages', function () {
+      expect(result.stdout).to.equal(`index
+├── bar@1.1.0
+└─┬ doo@1.0.1 (installed)
+  └── bar@1.1.0
+`)
+    })
+    it('should not print incompatible error', function () {
+      expect(result.stderr).to.not.include('version conflict')
+    })
+  })
   describe('install incompatible version', function () {
     let workspace
     let result
@@ -314,12 +349,18 @@ describe('installed project with package.json and node_modules', function () {
       .then(() => workspace.run('$APM install bar@1.1.0'))
       .tap(res => (result = res))
     )
-    it('should be successful when installing directly', function () {
-      return workspace.readJson(`amd_modules/bar/package.json`)
-        .then(bar => {
-          expect(bar).to.have.property('name', 'bar')
-          expect(bar).to.have.property('version', '1.1.0')
-        })
+    it('should be successful', function () {
+      return workspace.readJson(`amd_modules/bar/package.json`).then(bar => {
+        expect(bar).to.have.property('name', 'bar')
+        expect(bar).to.have.property('version', '1.1.0')
+      })
+    })
+    it('should print installed and removed packages', function () {
+      expect(result.stdout).to.equal(`index
+├─┬ coo@1.0.0
+│ └── bar@1.0.0 (removed)
+└── bar@1.1.0 (installed)
+`)
     })
     it('should print incompatible error', function () {
       var msg = 'version conflict: upgrade bar@<=1.0.0 (required by coo@1.0.0) to match 1.1.0 (required by index)'
@@ -355,6 +396,14 @@ describe('installed project with package.json and node_modules', function () {
     it('should install conflicted package', function () {
       return workspace.readJson(`amd_modules/bar/package.json`)
         .then(json => expect(json).to.have.property('version', '1.0.0'))
+    })
+    it('should print installed and removed packages', function () {
+      expect(result.stdout).to.equal(`index
+├─┬ coo@1.0.0
+│ └── bar@1.0.0
+└─┬ doo@1.0.1 (installed)
+  └── bar@^1.1.0 (not installed)
+`)
     })
     it('should print incompatible error', function () {
       var msg = 'version conflict: upgrade bar@<=1.0.0 (required by coo@1.0.0) to match ^1.1.0 (required by doo@1.0.1)'
