@@ -5,6 +5,7 @@ const expect = chai.expect
 const registry = require('../stub/registry.js')
 
 describe('confliction handling', function () {
+  this.timeout(3000)
   before(cb => registry.startServer(cb))
   after(cb => registry.stopServer(cb))
 
