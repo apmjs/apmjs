@@ -4,6 +4,14 @@ const error = require('../utils/error.js')
 const _ = require('lodash')
 const rPlainVersion = /^\d/
 
+var originMaxSatisfying = Semver.maxSatisfying
+Semver.maxSatisfying = function (versions, semver) {
+  if (!semver || semver === 'latest') {
+    semver = '*'
+  }
+  return originMaxSatisfying(versions, semver)
+}
+
 Semver.maxSatisfyingDescriptor = function (versionMap, semver) {
   var versions = _.keys(versionMap)
   var version = Semver.maxSatisfying(versions, semver)

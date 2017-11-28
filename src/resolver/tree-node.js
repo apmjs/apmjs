@@ -130,11 +130,16 @@ TreeNode.prototype.addDependency = function (name, semver, options) {
     }
 
     return Promise.resolve()
-    .then(() => options.update ? null : this.tryCreateLocalNode(name, semver))
+    .then(() => {
+      if (options.update || semver === 'latest') {
+        return null
+      }
+      return this.tryCreateLocalNode(name, semver)
+    })
     .then(node => node || this.createRemoteNode(name, semver))
     .then(node => {
       node.update = options.update
-      this.appendChild(node, semver)
+      this.appendChild(node)
       if (installed) {
         installed.pkg.status = 'removed'
       }

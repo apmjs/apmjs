@@ -161,7 +161,7 @@ describe('installed project with package.json and node_modules', function () {
       })
     })
   })
-  describe('installing higher version', function () {
+  describe.only('installing higher version', function () {
     var workspace
     before(() => Workspace
       .create({
@@ -175,18 +175,29 @@ describe('installed project with package.json and node_modules', function () {
         })
       })
       .tap(ws => (workspace = ws))
-      .then(ws => ws.run('$APM install bar@1.1.0'))
     )
     it('should be successful', function () {
-      return workspace.readJson(`amd_modules/bar/package.json`).then(bar => {
-        expect(bar).to.have.property('name', 'bar')
-        expect(bar).to.have.property('version', '1.1.0')
-      })
+      return workspace.run('$APM install bar@1.1.0')
+        .then(() => workspace.readJson(`amd_modules/bar/package.json`))
+        .then(bar => {
+          expect(bar).to.have.property('name', 'bar')
+          expect(bar).to.have.property('version', '1.1.0')
+        })
     })
     it('should change package.json accordingly', function () {
-      return workspace.readJson(`package.json`).then(index => {
-        expect(index.amdDependencies).to.have.property('bar', '^1.1.0')
-      })
+      return workspace.run('$APM install bar@1.1.0')
+        .then(() => workspace.readJson(`package.json`))
+        .then(index => expect(index.amdDependencies).to.have.property('bar', '^1.1.0'))
+    })
+    it('should support @latest', function () {
+      return workspace.run('$APM install bar@latest')
+        .then(() => workspace.readJson(`package.json`))
+        .then(index => expect(index.amdDependencies).to.have.property('bar', '^1.1.0'))
+        .then(() => workspace.readJson(`amd_modules/bar/package.json`))
+        .then(pkg => {
+          expect(pkg).to.have.property('name', 'bar')
+          expect(pkg).to.have.property('version', '1.1.0')
+        })
     })
   })
   describe('installing upon broken dependencies', function () {
