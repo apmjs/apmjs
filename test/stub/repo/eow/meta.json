@@ -11,6 +11,14 @@
         "tarball": "http://apmjs.com/eow/-/eow-1.0.0.tgz"
       }
     },
+    "1.0.1": {
+      "name": "eow",
+      "version": "1.0.1",
+      "amdDependencies": {},
+      "dist": {
+        "tarball": "http://apmjs.com/eow/-/eow-1.0.1.tgz"
+      }
+    },
     "1.1.0": {
       "name": "eow",
       "version": "1.1.0",

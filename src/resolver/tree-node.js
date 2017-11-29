@@ -65,6 +65,7 @@ TreeNode.prototype.updateOrInstallDependency = function (name, semver, save) {
   if (this.children[name]) {
     this.children[name].remove(this)
   }
+  semver = semver || this.pkg.dependencies[name]
   return this.addDependency(name, semver, {update: true, saved: save})
 }
 
@@ -112,7 +113,7 @@ TreeNode.prototype.createRemoteNode = function (name, semver) {
     })
 }
 
-function fetchSource (satisfies, options) {
+function useSource (satisfies, options) {
   if (options.update) {
     return 'remote'
   }
@@ -130,7 +131,7 @@ TreeNode.prototype.addDependency = function (name, semver, options) {
 
     if (installed) {
       let satisfies = installed.checkConformance(semver, this)
-      switch (fetchSource(satisfies, options)) {
+      switch (useSource(satisfies, options)) {
         case 'installed':
           this.appendChild(installed)
           if (options.saved) {
