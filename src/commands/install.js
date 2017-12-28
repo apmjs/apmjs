@@ -8,14 +8,14 @@ const Package = require('../package.js')
 
 function install (dependencies, errorHandler, conf) {
   let save = conf['save']
+  let deps = dependencies.map(version.parseDependencyDeclaration)
+
   return Package.loadOrCreate()
     .then(pkg => resolver.loadRoot(pkg))
     .then(root => {
       let installer = new Installer(root, {save})
-      return Promise.map(dependencies, decl => {
-        let ret = version.parseDependencyDeclaration(decl)
-        return root.installDependency(ret.name, ret.semver, save)
-      })
+      return Promise
+      .map(deps, dep => root.installDependency(dep.name, dep.semver, save))
       .then(() => resolver.getDependantPackages())
       .then(pkgs => installer.install(pkgs))
       .then(() => root.printTree())

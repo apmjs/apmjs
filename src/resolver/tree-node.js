@@ -160,8 +160,8 @@ TreeNode.prototype.addDependency = function (name, semver, options) {
       if (installed) {
         installed.pkg.status = 'removed'
       }
-      if (options.saved) {
-        node.saved = options.saved
+      if (options.saved || _.get(installed, 'saved')) {
+        node.saved = true
       }
       return node.populateChildren().then(() => node)
     })

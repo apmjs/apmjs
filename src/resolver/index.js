@@ -5,10 +5,14 @@ const _ = require('lodash')
 
 function loadRoot (pkg, options) {
   options = options || {}
-  log.verbose('loading local tree...')
-  var ret = pkg.noPackageJSON
-    ? Promise.resolve()
-    : TreeNode.loadLockfile(pkg.lockfilePath)
+  log.verbose('loading local tree with options', options)
+  let ret
+  if (pkg.noPackageJSON) {
+    log.info('not loading lock file')
+    ret = Promise.resolve()
+  } else {
+    ret = TreeNode.loadLockfile(pkg.lockfilePath)
+  }
   return ret.then(() => {
     let root = new TreeNode(pkg)
     root.isRoot = true
