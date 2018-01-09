@@ -49,7 +49,7 @@ Installer.prototype.install = function (packages) {
 Installer.prototype.postInstall = function () {
   return Promise.all([
     this.hasPackageJSON && this.pkg.saveDependencies(this.root.children, this.save),
-    this.pkg.saveLocks(resolver.getSavedPackages(), TreeNode.dependencyLocks),
+    this.pkg.saveLocks(resolver.getSavedPackages(), TreeNode.lock),
     this.createIndex(resolver.getDependantPackages())
   ])
 }
@@ -64,12 +64,7 @@ Installer.prototype.createIndex = function (pkgs) {
 }
 
 Installer.prototype.installPackage = function (pkg) {
-  let url = pkg.descriptor.dist.tarball
-  let dir = path.resolve(this.pathname, pkg.name)
-  return npm
-    .downloadPackage(url, dir)
-    .then(() => pkg.postInstall())
-    .then(() => pkg)
+  return pkg.install(this.pathname)
 }
 
 module.exports = Installer

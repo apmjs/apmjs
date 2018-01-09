@@ -15,13 +15,16 @@ describe('resolver', function () {
       var file = path.resolve(__dirname, `../stub/${id}.info.json`)
       return server.get(`/${id}`).reply(200, fs.readFileSync(file))
     }, nock('http://apm'))
-    return npm.load({registry: 'http://apm'})
+    return npm.load().then(() => {
+      npm.config.set('@baidu:registry', 'http://apm')
+      npm.config.set('registry', 'http://apm')
+    })
   })
   after(() => nock.cleanAll())
   beforeEach(() => {
     TreeNode.nodes = {}
     TreeNode.pending = {}
-    TreeNode.dependencyLocks = {}
+    TreeNode.lock = {dependencies: {}}
   })
 
   describe('.getDependantPackages()', function () {

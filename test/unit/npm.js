@@ -1,40 +1,30 @@
 const fs = require('fs-extra')
 const os = require('os')
+const Promise = require('bluebird')
+// const Workspace = require('../stub/workspace')
 const error = require('../../src/utils/error.js')
 const path = require('path')
 const debug = require('debug')('apmjs:test:npm')
 const npm = require('../../src/utils/npm.js')
 const chai = require('chai')
 const expect = chai.expect
-const nock = require('nock')
-const fooInfo = require('../stub/foo.info.json')
-const fooTgz = path.resolve(__dirname, '../stub/foo-1.0.0.tgz')
+const registry = require('../stub/registry.js')
 chai.use(require('chai-as-promised'))
 
 describe('npm', function () {
   this.timeout(1000)
 
-  before(() => {
-    nock('http://apm')
-      .log(debug)
-      .get('/foo').reply(200, JSON.stringify(fooInfo))
-      .get('/@baidu%2Ffoo').reply(200, JSON.stringify(fooInfo))
-      // Note: mock twice for 2 requests, same as /foo@1.0.0
-      .get('/xxx').reply(404, 'Not Found')
-      .get('/xxx').reply(404, 'Not Found')
-      .get('/foo/-/foo-1.0.0.tgz').replyWithFile(200, fooTgz)
-      .get('/foo/-/foo-1.0.0.tgz').replyWithFile(200, fooTgz)
-      .get('/foo/-/foo-3.0.2.tgz').reply(302, undefined, {
-        'Location': '/foo/-/foo-1.0.0.tgz'
-      })
-    return npm.load({registry: 'http://apm'})
+  before(() => Promise
+    .all([
+      npm.load(),
+      Promise.fromCallback(cb => registry.startServer(cb))
+    ])
     .then(() => {
-      var npm = require('npm')
-      npm.config.set('@baidu:registry', 'http://apm')
-      npm.config.set('registry', 'http://apm')
+      npm.config.set('@baidu:registry', registry.url)
+      npm.config.set('registry', registry.url)
     })
-  })
-  after(() => nock.cleanAll())
+  )
+  after(cb => registry.stopServer(cb))
 
   describe('getPackageMeta', function () {
     it('should get response', function () {
@@ -46,7 +36,7 @@ describe('npm', function () {
             amdDependencies: {},
             dist: {
               shasum: '943e0ec03df00ebeb6273a5b94b916ba54b47581',
-              tarball: 'http://apm/foo/-/foo-1.0.0.tgz'
+              tarball: `${registry.url}/foo/-/foo-1.0.0.tgz`
             }
           })
         })
@@ -71,7 +61,7 @@ describe('npm', function () {
       // tarball-extract does not play well with mock-fs
       return npm
         .downloadPackage(
-          'http://apm/foo/-/foo-1.0.0.tgz',
+          `${registry.url}/foo/-/foo-1.0.0.tgz`,
           path.join(os.tmpdir(), 'amd_modules/foo')
         )
         .then(() => fs.readJson(path.join(os.tmpdir(), 'amd_modules/foo/package.json')))
@@ -79,14 +69,14 @@ describe('npm', function () {
     })
     it('should reject if not exist', function () {
       return expect(npm.downloadPackage(
-          'http://apm/xxx',
+          `${registry.url}/xxx`,
           path.join(os.tmpdir(), 'amd_modules/foo')
         ))
         .to.eventually.be.rejectedWith(error.NotFound, '404 Not Found')
     })
     it('should follow 302 redirect', function () {
       return npm.downloadPackage(
-          'http://apm/foo/-/foo-3.0.2.tgz',
+          `${registry.url}/302-/foo/-/foo-1.0.0.tgz.tgz`,
           path.join(os.tmpdir(), 'amd_modules/foo')
         )
         .then(() => fs.readJson(

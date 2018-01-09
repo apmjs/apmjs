@@ -27,12 +27,12 @@ function TreeNode (pkg, saved) {
 }
 
 TreeNode.nodes = {}
-TreeNode.dependencyLocks = {}
+TreeNode.lock = {dependencies: {}}
 
 TreeNode.loadLockfile = function (filepath) {
   log.verbose(`loading lock file from ${filepath}`)
   return fs.readJson(filepath)
-    .then(lock => (TreeNode.dependencyLocks = lock.dependencies))
+    .then(lock => (TreeNode.lock = lock))
     .catch(catchNoEntry)
     .catch(e => {
       throw error.createFrom(e, `failed to load lockfile ${filepath}`)
@@ -199,7 +199,7 @@ TreeNode.prototype.populateChildren = function (options) {
 
   return Promise
   .all(_.map(this.pkg.dependencies, (semver, name) => {
-    var lock = TreeNode.dependencyLocks[name]
+    var lock = TreeNode.lock.dependencies[name]
 
     if (!options.update && lock && Version.satisfies(lock.version, semver)) {
       semver = lock.version

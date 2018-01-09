@@ -1,5 +1,7 @@
 'use strict'
+const crypto = require('crypto')
 const registry = require('../registry.js')
+const ssri = require('ssri')
 const os = require('os')
 const error = require('./error.js')
 const log = require('npmlog')
@@ -12,8 +14,32 @@ const npm = require('npm')
 const fs = require('fs-extra')
 const tarball = require('tarball-extract')
 const _ = require('lodash')
+const PassThrough = require('stream').PassThrough
 
-function downloadPackage (url, dir) {
+function checkIntegrity (dataStream, options) {
+  if (options.integrity) {
+    return ssri.checkStream(dataStream, options.integrity)
+  }
+  if (options.shasum) {
+    let hash = crypto.createHash('sha1')
+    return dataStream.then(data => {
+      hash.update(data)
+      let shasum = hash.digest('hex')
+      if (shasum === options.shasum) return shasum
+      throw new Error(`integrity checksum failed when using sha1: wanted ${options.shasum} but got ${shasum}`)
+    })
+  }
+}
+
+function writeFileStream (stream, filename) {
+  return new Promise((resolve, reject) => {
+    stream.on('error', reject)
+    stream.on('finish', resolve)
+    stream.pipe(fs.createWriteStream(filename))
+  })
+}
+
+function downloadPackage (url, dir, checksum) {
   let name = path.basename(url)
   let tarfile = path.join(os.tmpdir(), `${name}.tgz`)
   let untardir = path.join(os.tmpdir(), `${name}`)
@@ -22,20 +48,23 @@ function downloadPackage (url, dir) {
   log.http('tarball', url)
   return Promise.all([fs.remove(untardir), fs.remove(tarfile)])
     .then(() => new Promise((resolve, reject) => {
-      let s = request({
-        url: url,
-        followRedirect: true
-      })
-      .on('response', res => {
-        if (res.statusCode >= 400) {
-          reject(new error.HTTP(res.statusCode))
-        } else {
-          s.on('error', reject)
-          .pipe(fs.createWriteStream(tarfile))
-          .on('finish', resolve)
-        }
-      })
+      let fileStream = new PassThrough()
+      request({ url, followRedirect: true })
+      .on('response', res => res.statusCode >= 400
+        ? reject(new error.HTTP(res.statusCode))
+        : resolve(fileStream))
+      .pipe(fileStream)
     }))
+    .then(fileStream => {
+      let checkStream = new PassThrough()
+      let writeStream = new PassThrough()
+      fileStream.pipe(checkStream)
+      fileStream.pipe(writeStream)
+      return Promise.all([
+        writeFileStream(writeStream, tarfile),
+        checksum && checkIntegrity(checkStream, checksum)
+      ])
+    })
     .then(() => Promise.fromCallback(
       cb => tarball.extractTarball(tarfile, untardir, cb)
     ))
@@ -86,7 +115,16 @@ function load (conf) {
   .tap(() => (log.level = 'silly'))
 }
 
-let npmDelegate = {downloadPackage, getPackageMeta, load}
+let config = {
+  set: function (key, val) {
+    return npm.config.set(key, val)
+  },
+  get: function (key) {
+    return npm.config.get(key)
+  }
+}
+
+let npmDelegate = {downloadPackage, getPackageMeta, load, config}
 
 Object.defineProperties(npmDelegate, {
   'dir': {

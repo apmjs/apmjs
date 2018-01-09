@@ -1,7 +1,7 @@
 'use strict'
 const findUp = require('../src/utils/fs.js').findUp
-const npm = require('./utils/npm')
 const assert = require('assert')
+const npm = require('./utils/npm')
 const log = require('npmlog')
 const process = require('process')
 const error = require('./utils/error.js')
@@ -84,6 +84,15 @@ Package.createMaxSatisfying = function (info, semver, tracing) {
  */
 Package.hasInstalled = function (name, version, pathname) {
   return new Package({name, version}).hasInstalled(pathname)
+}
+
+Package.prototype.install = function (prefix) {
+  let url = this.descriptor.dist.tarball
+  let dir = path.resolve(prefix, this.name)
+  return npm
+    .downloadPackage(url, dir)
+    .then(() => this.postInstall())
+    .then(() => this)
 }
 
 Package.prototype.hasInstalled = function (pathname) {
@@ -228,19 +237,19 @@ Package.prototype.saveDependencies = function (nodes, save) {
     })
 }
 
-Package.prototype.saveLocks = function (packages, dependencyLocks) {
+Package.prototype.saveLocks = function (packages, originalLock) {
   var lock = {
     name: this.name,
     version: this.version,
     dependencies: {}
   }
   packages.forEach(pkg => {
-    let author = _.get(pkg, 'descriptor.author') ||
-      _.get(dependencyLocks, `${pkg.name}.author`)
-    let integrity = _.get(pkg, 'descriptor.dist.shasum') ||
-      _.get(dependencyLocks, `${pkg.name}.integrity`)
     let version = pkg.version
-    lock.dependencies[pkg.name] = { version, author, integrity }
+    let integrity = _.get(pkg, 'descriptor.dist.shasum') ||
+      _.get(originalLock, `${pkg.name}.integrity`)
+    // let integrity = _.get(pkg, 'descriptor.dist.shasum') ||
+      // _.get(originalLock, `${pkg.name}.integrity`)
+    lock.dependencies[pkg.name] = { version, integrity }
   })
   return fs.writeJson(this.lockfilePath, lock, {spaces: 2})
 }

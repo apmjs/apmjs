@@ -3,10 +3,13 @@ const fs = require('fs-extra')
 const path = require('path')
 const http = require('http')
 const rMeta = /^\/([^/]+)$/
+const r302 = /302-(.+)\.tgz$/
 const rTarball = /^\/([^/]+)\/-\/(.*)$/
 
 let server
 let port = process.env.REGISTRY_PORT || '8723'
+
+exports.url = 'http://localhost:' + port
 
 exports.startServer = function (cb) {
   server = http.createServer(requestHandler)
@@ -15,14 +18,29 @@ exports.startServer = function (cb) {
   function requestHandler (req, res) {
     let match
 
-    if ((match = req.url.match(rMeta))) {
+    if ((match = req.url.match(r302))) {
+      res.writeHead(302, {
+        'Location': exports.url + match[1]
+      })
+      res.end()
+    } else if ((match = req.url.match(rMeta))) {
       let name = decodeURIComponent(match[1])
       let filepath = path.resolve(__dirname, '../stub/repo', name, 'meta.json')
-      res.writeHead(200, {
-        'Content-Type': 'application/json; charset=utf-8'
-      })
-      fs.readFile(filepath, 'utf8').then(content => {
+      fs.readFile(filepath, 'utf8')
+      .then(content => {
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8'
+        })
         res.end(exports.applyStubServer(content))
+      })
+      .catch(e => {
+        if (e.code === 'ENOENT') {
+          res.writeHead(404)
+          res.end('package not found')
+        } else {
+          res.writeHead(500)
+          res.end(e.message + '\n' + e.stack)
+        }
       })
     } else if ((match = req.url.match(rTarball))) {
       let name = decodeURIComponent(match[1])

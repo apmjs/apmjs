@@ -137,7 +137,6 @@ describe('fresh project with package.json', function () {
         dependencies: {
           bar: {
             version: '1.0.0',
-            author: 'harttle <harttle@harttle.com>',
             integrity: 'xxx'
           }
         }
