@@ -11,12 +11,12 @@ const npm = require('../utils/npm.js')
 const _ = require('lodash')
 const catchNoEntry = require('../utils/fs.js').catchNoEntry
 
-function TreeNode (pkg) {
+function TreeNode (pkg, saved) {
   assert(pkg.name, 'package name is required')
   this.name = pkg.name
   this.parents = {}
   this.isRoot = false
-  this.saved = false
+  this.saved = saved || false
   this.children = {}
   this.referenceCount = 0
   this.setPackage(pkg)
@@ -60,21 +60,29 @@ TreeNode.prototype.printTree = function () {
   console.log(str)
 }
 
-TreeNode.prototype.updateOrInstallDependency = function (name, semver, save) {
+function savedVersionExists (name) {
+  return TreeNode.nodes[name] && TreeNode.nodes[name].saved
+}
+
+TreeNode.prototype.updateOrInstallDependency = function (name, semver, saved) {
   log.silly(`update or install dependency ${name}@${semver}`)
+  if (savedVersionExists(name)) saved = true
   if (this.children[name]) {
+    log.silly(`${this.children[name]} already installed for ${this}, removing...`)
     this.children[name].remove(this)
   }
   semver = semver || this.pkg.dependencies[name]
-  return this.addDependency(name, semver, {update: true, saved: save})
+  return this.addDependency(name, semver, {update: true, saved})
 }
 
-TreeNode.prototype.installDependency = function (name, semver, save) {
+TreeNode.prototype.installDependency = function (name, semver, saved) {
   log.silly(`install dependency ${name}@${semver}`)
+  if (savedVersionExists(name)) saved = true
   if (this.children[name]) {
+    log.silly(`${this.children[name]} already installed for ${this}, removing...`)
     this.children[name].remove(this)
   }
-  return this.addDependency(name, semver, {listed: true, saved: save})
+  return this.addDependency(name, semver, {listed: true, saved})
 }
 
 TreeNode.prototype.tryCreateLocalNode = function (name, semver) {
@@ -139,7 +147,7 @@ TreeNode.prototype.addDependency = function (name, semver, options) {
           }
           return Promise.resolve(installed)
         case 'fail':
-          let node = new TreeNode({name: name, version: semver, placeholder: true})
+          let node = new TreeNode({name: name, version: semver, placeholder: true}, options.saved)
           node.pkg.status = 'not installed'
           this.appendChild(node)
           return Promise.resolve(node)
@@ -160,9 +168,7 @@ TreeNode.prototype.addDependency = function (name, semver, options) {
       if (installed) {
         installed.pkg.status = 'removed'
       }
-      if (options.saved || _.get(installed, 'saved')) {
-        node.saved = true
-      }
+      node.saved = options.saved
       return node.populateChildren().then(() => node)
     })
   })

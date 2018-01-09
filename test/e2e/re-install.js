@@ -33,6 +33,10 @@ describe('re-install a package', function () {
   })
   it('should update once specified version', function () {
     return workspace.run('$APM install bar@1.1.0')
+      .then(() => workspace.readJson(`amd-lock.json`))
+      .then(bar => {
+        expect(bar).to.have.nested.property('dependencies.bar.version', '1.1.0')
+      })
       .then(() => workspace.readJson(`amd_modules/bar/package.json`))
       .then(bar => {
         expect(bar).to.have.property('name', 'bar')
