@@ -1,15 +1,13 @@
 'use strict'
 const error = require('../utils/error.js')
-const fs = require('fs-extra')
-const Promise = require('bluebird')
 const assert = require('assert')
+const Lock = require('./lock.js')
 const treePrinter = require('tree-printer')
 const Package = require('../package.js')
 const log = require('npmlog')
 const Version = require('./version.js')
 const npm = require('../utils/npm.js')
 const _ = require('lodash')
-const catchNoEntry = require('../utils/fs.js').catchNoEntry
 
 function TreeNode (pkg, saved) {
   assert(pkg.name, 'package name is required')
@@ -27,17 +25,6 @@ function TreeNode (pkg, saved) {
 }
 
 TreeNode.nodes = {}
-TreeNode.lock = {dependencies: {}}
-
-TreeNode.loadLockfile = function (filepath) {
-  log.verbose(`loading lock file from ${filepath}`)
-  return fs.readJson(filepath)
-    .then(lock => (TreeNode.lock = lock))
-    .catch(catchNoEntry)
-    .catch(e => {
-      throw error.createFrom(e, `failed to load lockfile ${filepath}`)
-    })
-}
 
 TreeNode.prototype.toPlainTree = function () {
   let obj = {
@@ -199,10 +186,10 @@ TreeNode.prototype.populateChildren = function (options) {
 
   return Promise
   .all(_.map(this.pkg.dependencies, (semver, name) => {
-    var lock = TreeNode.lock.dependencies[name]
+    let lockedVersion = Lock.getVersion(name)
 
-    if (!options.update && lock && Version.satisfies(lock.version, semver)) {
-      semver = lock.version
+    if (!options.update && lockedVersion && Version.satisfies(lockedVersion, semver)) {
+      semver = lockedVersion
     }
     return this.addDependency(name, semver, {saved: this.saved, update: options.update})
   }))

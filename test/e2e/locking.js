@@ -10,7 +10,7 @@ describe('locking', function () {
 
   describe('respecting lock', function () {
     let workspace
-    before(() => Workspace
+    beforeEach(() => Workspace
       .create({
         'package.json': `{
           "name": "main",
@@ -18,8 +18,8 @@ describe('locking', function () {
           "amdDependencies": { "doo": "^1.0.0" }
         }`,
         'amd-lock.json': `{"dependencies": {
-          "doo": { "version": "1.0.0", "integrity": "xxx" },
-          "bar": { "version": "1.0.0", "integrity": "xxx" }
+          "doo": {"version": "1.0.0"},
+          "bar": {"version": "1.0.0"}
         }}`
       })
       .then(ws => (workspace = ws))
@@ -45,7 +45,7 @@ describe('locking', function () {
 
   describe('updating lock', function () {
     let workspace
-    before(() => Workspace
+    beforeEach(() => Workspace
       .create({
         'package.json': `{
           "name": "main",
@@ -53,8 +53,8 @@ describe('locking', function () {
           "amdDependencies": { "doo": "^1.0.0" }
         }`,
         'amd-lock.json': `{"dependencies": {
-          "doo": { "version": "1.0.0", "integrity": "xxx" },
-          "bar": { "version": "1.0.0", "integrity": "xxx" }
+          "doo": {"version": "1.0.0"},
+          "bar": {"version": "1.0.0"}
         }}`
       })
       .then(ws => {
@@ -79,10 +79,9 @@ describe('locking', function () {
       })
     })
     it('should update lock when installing with version spec', function () {
-      return workspace.run('$APM install bar@1.0.1')
+      return workspace.run('$APM install bar@1.0.1 --loglevel=silly')
       .then(() => workspace.readJson(`amd-lock.json`))
       .then(lock => {
-        console.log(lock)
         expect(lock).to.have.nested.property('dependencies.doo.version', '1.0.0')
         expect(lock).to.have.nested.property('dependencies.bar.version', '1.0.1')
       })
@@ -100,10 +99,7 @@ describe('locking', function () {
         }),
         'amd_modules/bar/package.json': '{ "name": "bar", "version": "1.0.0" }',
         'amd-lock.json': `{ "dependencies": {
-            "bar": {
-              "version": "1.0.0",
-              "integrity": "xxx"
-            }
+            "bar": { "version": "1.0.0" }
         }}`
       })
       .then(ws => (workspace = ws))

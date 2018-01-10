@@ -24,6 +24,7 @@ Workspace.create = function (tree) {
   .then(mountpoint => {
     let dirname = Math.random().toString(36).substr(2)
     ws.dirpath = path.resolve(mountpoint, dirname)
+    ws.cache = path.join(ws.dirpath, '.npm')
     return fs.ensureDir(ws.dirpath).then(() => createTree(ws.dirpath, tree))
   })
   .then(() => ws)
@@ -46,7 +47,7 @@ Workspace.prototype.readJsonSync = function (filename) {
 
 Workspace.prototype.run = function (cmd) {
   const registry = `http://localhost:${this.port}`
-  const bin = `node ${this.apmbin} --registry ${registry}`
+  const bin = `node ${this.apmbin} --registry ${registry} --cache=${this.cache}`
   cmd = `cd ${this.dirpath} && export APM="${bin}" && ${cmd}`
   return new Promise((resolve, reject) => {
     var child = exec(cmd, (err, stdout, stderr) => {

@@ -3,7 +3,8 @@ const os = require('os')
 const PassThrough = require('stream').PassThrough
 const Promise = require('bluebird')
 const tarball = require('tarball-extract')
-const findUp = require('../src/utils/fs.js').findUp
+const Lock = require('./resolver/lock.js')
+const findUp = require('./utils/fs.js').findUp
 const integrity = require('./utils/integrity.js')
 const writeFileStream = require('./utils/fs.js').writeFileStream
 const assert = require('assert')
@@ -25,6 +26,7 @@ function Package (descriptor, pathname) {
   this.version = descriptor.version
   this.name = descriptor.name
   this.dependencies = descriptor.amdDependencies || {}
+  this.integrity = Lock.getIntegrity(this.name, this.version) || _.get(descriptor, 'dist.integrity')
   this.descriptor = descriptor
   if (pathname) {
     this.setPathname(pathname)
@@ -91,17 +93,20 @@ Package.hasInstalled = function (name, version, pathname) {
   return new Package({name, version}).hasInstalled(pathname)
 }
 
-Package.prototype.install = function () {
-  let url = this.descriptor.dist.tarball
+Package.prototype.install = function (lock) {
+  if (lock) {
+    this.lock = lock.dependencies[this.name]
+  }
 
   return this.queryCache()
-  .then(tarfile => tarfile || this.download(url))
+  .then(tarfile => tarfile || this.download())
   .then(tarfile => this.untar(tarfile))
   .then(() => this.postInstall())
 }
 
 Package.prototype.queryCache = function () {
   let tarfile = path.join(this.cacheDir(), 'package.tgz')
+  log.silly('package', `querying cache for ${this}`)
   return fs.exists(tarfile)
   .then(exists => {
     if (!exists) {
@@ -117,7 +122,8 @@ Package.prototype.cacheDir = function () {
   return path.join(npm.config.get('cache'), this.name, this.version)
 }
 
-Package.prototype.download = function (url) {
+Package.prototype.download = function () {
+  let url = this.descriptor.dist.tarball
   let cachedir = this.cacheDir()
   let tarfile = path.join(cachedir, 'package.tgz')
   return fs.emptyDir(cachedir)
@@ -157,17 +163,29 @@ Package.prototype.untar = function (tarfile) {
 }
 
 Package.prototype.checkIntegrity = function (dataStream) {
-  let sri = _.get(this, 'descriptor.dist.integrity')
+  let sri = this.integrity
   let sha1 = _.get(this, 'descriptor.dist.shasum')
   if (sri) {
-    log.verbose('integrity', `checking ${this} against ${sri}`)
-    return integrity.checkSRI(dataStream, sri)
+    log.verbose('integrity', `sri checking ${this} against ${sri}`)
+    return integrity.checkSRI(dataStream, sri).then(() => (this.integrity = sri))
   }
+
+  let sParse = new PassThrough()
+  let sCheck = new PassThrough()
+  dataStream.pipe(sParse)
+  dataStream.pipe(sCheck)
+
+  let todo = [integrity.getSRI(sParse).then(sri => {
+    log.verbose(`integrity generated for ${this}: sri`)
+    this.integrity = sri
+  })]
   if (sha1) {
-    log.verbose('integrity', `checking ${this} against ${sha1}`)
-    return integrity.checkSHA1(dataStream, sha1)
+    log.verbose('integrity', `sha1 checking ${this} against ${sha1}`)
+    todo.push(integrity.checkSHA1(sCheck, sha1))
+  } else {
+    log.warn('integrity', `no integrity/shasum found for ${this}, skipping check`)
   }
-  log.warn('integrity', `no integrity/shasum found for ${this}, skipping check`)
+  return Promise.all(todo)
 }
 
 Package.prototype.hasInstalled = function (pathname) {
@@ -317,7 +335,7 @@ Package.prototype.saveDependencies = function (nodes, save) {
     })
 }
 
-Package.prototype.saveLocks = function (packages, originalLock) {
+Package.prototype.saveLocks = function (packages) {
   var lock = {
     name: this.name,
     version: this.version,
@@ -325,10 +343,8 @@ Package.prototype.saveLocks = function (packages, originalLock) {
   }
   packages.forEach(pkg => {
     let version = pkg.version
-    let integrity = _.get(pkg, 'descriptor.dist.shasum') ||
-      _.get(originalLock, `${pkg.name}.integrity`)
-    // let integrity = _.get(pkg, 'descriptor.dist.shasum') ||
-      // _.get(originalLock, `${pkg.name}.integrity`)
+    let integrity = pkg.integrity
+
     lock.dependencies[pkg.name] = { version, integrity }
   })
   return fs.writeJson(this.lockfilePath, lock, {spaces: 2})

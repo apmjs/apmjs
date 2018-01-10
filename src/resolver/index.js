@@ -1,6 +1,7 @@
 'use strict'
 const TreeNode = require('./tree-node.js')
 const log = require('npmlog')
+const Lock = require('./lock.js')
 const _ = require('lodash')
 
 function loadRoot (pkg, options) {
@@ -11,7 +12,7 @@ function loadRoot (pkg, options) {
     log.info('not loading lock file')
     ret = Promise.resolve()
   } else {
-    ret = TreeNode.loadLockfile(pkg.lockfilePath)
+    ret = Lock.loadLockfile(pkg.lockfilePath)
   }
   return ret.then(() => {
     let root = new TreeNode(pkg)

@@ -1,6 +1,7 @@
 const chai = require('chai')
 const registry = require('../stub/registry.js')
 const sinon = require('sinon')
+const Lock = require('../../src/resolver/lock.js')
 const log = require('npmlog')
 const expect = chai.expect
 const Promise = require('bluebird')
@@ -27,7 +28,7 @@ describe('TreeNode', function () {
   beforeEach(() => {
     TreeNode.nodes = {}
     TreeNode.pending = {}
-    TreeNode.lock = {dependencies: {}}
+    Lock.reset()
   })
 
   describe('new TreeNode()', function () {

@@ -1,3 +1,4 @@
+'use strict'
 const fs = require('fs-extra')
 const Promise = require('bluebird')
 const streamEqual = require('stream-equal')

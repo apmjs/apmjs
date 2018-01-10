@@ -9,6 +9,12 @@ function checkSRI (dataStream, sum) {
   })
 }
 
+function getSRI (dataStream) {
+  return ssri
+  .fromStream(dataStream, {algorithms: ['sha512']})
+  .then(integrity => integrity['sha512'][0].source)
+}
+
 function checkSHA1 (dataStream, sum) {
   let hash = crypto.createHash('sha1')
   dataStream.on('data', data => hash.update(data))
@@ -23,4 +29,4 @@ function checkSHA1 (dataStream, sum) {
   }))
 }
 
-module.exports = {checkSRI, checkSHA1}
+module.exports = {checkSRI, checkSHA1, getSRI}

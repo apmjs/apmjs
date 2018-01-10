@@ -1,5 +1,6 @@
 const chai = require('chai')
 const registry = require('../stub/registry.js')
+const Lock = require('../../src/resolver/lock.js')
 const Promise = require('bluebird')
 const npm = require('../../src/utils/npm.js')
 const _ = require('lodash')
@@ -20,7 +21,7 @@ describe('resolver', function () {
   beforeEach(() => {
     TreeNode.nodes = {}
     TreeNode.pending = {}
-    TreeNode.lock = {dependencies: {}}
+    Lock.reset()
   })
 
   describe('.getDependantPackages()', function () {

@@ -8,7 +8,7 @@ describe('re-install a package', function () {
   before(cb => registry.startServer(cb))
   after(cb => registry.stopServer(cb))
   var workspace
-  before(() => Workspace
+  beforeEach(() => Workspace
     .create({
       'package.json': '{"name": "index", "amdDependencies": { "bar": "^1.0.1" }}',
       'amd_modules/bar/package.json': '{"name": "bar", "version": "1.0.1"}'
@@ -59,7 +59,7 @@ describe('re-install a package', function () {
       })
   })
   it('should install a lower version successfully', function () {
-    return workspace.run('$APM install bar@1.0.1')
+    return workspace.run('$APM install bar@1.0.1 --loglevel=silly')
     .then(() => workspace.readJson(`amd_modules/bar/package.json`))
     .then(bar => {
       expect(bar).to.have.property('name', 'bar')

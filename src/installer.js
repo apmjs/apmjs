@@ -49,7 +49,7 @@ Installer.prototype.install = function (packages) {
 Installer.prototype.postInstall = function () {
   return Promise.all([
     this.hasPackageJSON && this.pkg.saveDependencies(this.root.children, this.save),
-    this.pkg.saveLocks(resolver.getSavedPackages(), TreeNode.lock),
+    this.pkg.saveLocks(resolver.getSavedPackages()),
     this.createIndex(resolver.getDependantPackages())
   ])
 }
