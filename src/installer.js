@@ -14,7 +14,8 @@ function Installer (root, options) {
   options = options || {}
   this.root = root
   this.pkg = this.root.pkg
-  this.pathname = this.pkg.modulesPath
+  this.modulesPath = this.pkg.modulesPath
+  this.pathname = this.pkg.pathname
   this.hasPackageJSON = !this.pkg.noPackageJSON
   this.save = options.save
 }
@@ -39,10 +40,9 @@ Installer.prototype.install = function (packages) {
     packages = [packages]
   }
   return Promise
-    .map(packages, pkg => pkg.setDirname(this.pathname))
-    .filter(pkg => pkg.hasInstalled(this.pathname).then(x => !x))
-    .map(pkg => this.installPackage(pkg))
-    .map(pkg => (pkg.status = 'installed'))
+    .map(packages, pkg => pkg.setDirname(this.modulesPath))
+    .filter(pkg => pkg.hasInstalled(this.modulesPath).then(x => !x))
+    .map(pkg => pkg.install())
     .then(() => this.postInstall())
 }
 
@@ -57,14 +57,10 @@ Installer.prototype.postInstall = function () {
 Installer.prototype.createIndex = function (pkgs) {
   let fields = ['name', 'version', 'filepath', 'fullpath']
   let index = pkgs.map(pkg => _.pick(pkg, fields))
-  let file = path.resolve(this.pathname, 'index.json')
+  let file = path.resolve(this.modulesPath, 'index.json')
   log.verbose('writing mapping', file)
-  return fs.ensureDir(this.pathname)
+  return fs.ensureDir(this.modulesPath)
   .then(() => fs.writeJson(file, index, {spaces: 2}))
-}
-
-Installer.prototype.installPackage = function (pkg) {
-  return pkg.install(this.pathname)
 }
 
 module.exports = Installer

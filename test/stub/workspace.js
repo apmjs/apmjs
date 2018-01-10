@@ -14,16 +14,17 @@ const rAlreadyMounted = /"(.*)" already mounted/
 function Workspace (port) {
   this.port = port
   this.apmbin = path.resolve(__dirname, '../../bin/cli.js')
+  this.dirpath = 'call Workspace.create to create a directory'
 }
 
-Workspace.create = function (root) {
+Workspace.create = function (tree) {
   let port = process.env.REGISTRY_PORT || '8723'
   let ws = new Workspace(port)
   return createDisk()
   .then(mountpoint => {
     let dirname = Math.random().toString(36).substr(2)
     ws.dirpath = path.resolve(mountpoint, dirname)
-    return fs.ensureDir(ws.dirpath).then(() => createTree(ws.dirpath, root))
+    return fs.ensureDir(ws.dirpath).then(() => createTree(ws.dirpath, tree))
   })
   .then(() => ws)
 }
@@ -56,8 +57,8 @@ Workspace.prototype.run = function (cmd) {
   })
 }
 
-function createTree (dirpath, root) {
-  let ps = _.map(root, (val, key) => {
+function createTree (dirpath, tree) {
+  let ps = _.map(tree, (val, key) => {
     let nodename = path.resolve(dirpath, key)
     return _.isString(val)
       ? createFile(nodename, val)

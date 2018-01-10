@@ -1,0 +1,33 @@
+{
+  "name": "integrity",
+  "versions": {
+    "1.0.0": {
+      "name": "integrity",
+      "description": "shasum will not match",
+      "version": "1.0.0",
+      "dist": {
+        "shasum": "943e0ec03df00ebeb6273a5b94b916ba54b47581",
+        "tarball": "http://apmjs.com/integrity/-/integrity-1.0.0.tgz"
+      }
+    },
+    "2.0.0": {
+      "name": "integrity",
+      "description": "integrity will not match",
+      "version": "2.0.0",
+      "dist": {
+        "integrity": "sha512-xxx",
+        "tarball": "http://apmjs.com/integrity/-/integrity-2.0.0.tgz"
+      }
+    },
+    "3.0.0": {
+      "name": "integrity",
+      "description": "all match",
+      "version": "3.0.0",
+      "dist": {
+        "integrity": "sha512-qvdgmdZNXkfyDTX+6FPrILT2Hk6rR9ztBJ47F1vj5Rff9U9ODuS2B+KLTgZ5Ek3FGJc/vIe0WYJTp9xhp/VxTg==",
+        "shasum": "9d5ac16b9dc7788e19fc4435c8816851fdd73ba6",
+        "tarball": "http://apmjs.com/integrity/-/integrity-3.0.0.tgz"
+      }
+    }
+  }
+}

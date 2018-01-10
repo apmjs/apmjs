@@ -23,6 +23,14 @@ function PackageNotFound (name, parent) {
 }
 util.inherits(PackageNotFound, Error)
 
+function IntegrityError (message) {
+  Error.captureStackTrace(this, this.constructor)
+  this.name = this.constructor.name
+  this.code = 'EINTEGRITY'
+  this.message = message || `integrity check failed`
+}
+util.inherits(IntegrityError, Error)
+
 function UnmetDependency (message) {
   Error.captureStackTrace(this, this.constructor)
   this.name = this.constructor.name
@@ -60,4 +68,4 @@ function HTTP (status) {
 }
 util.inherits(HTTP, Error)
 
-module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName, InvalidPackageMeta, HTTP, createFrom}
+module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName, InvalidPackageMeta, HTTP, createFrom, IntegrityError}

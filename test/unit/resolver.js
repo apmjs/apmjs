@@ -11,13 +11,9 @@ chai.use(require('chai-as-promised'))
 describe('resolver', function () {
   before(() => Promise
     .all([
-      npm.load(),
+      npm.load({'@baidu:registry': registry.url, 'registry': registry.url}),
       Promise.fromCallback(cb => registry.startServer(cb))
     ])
-    .then(() => {
-      npm.config.set('@baidu:registry', registry.url)
-      npm.config.set('registry', registry.url)
-    })
   )
   after(cb => registry.stopServer(cb))
 

@@ -214,7 +214,6 @@ TreeNode.prototype.toString = function () {
 }
 
 TreeNode.prototype.setPackage = function (pkg) {
-  log.silly('setPackage', pkg.toString())
   this.pkg = pkg
   this.version = pkg.version
 }

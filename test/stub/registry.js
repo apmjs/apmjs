@@ -3,13 +3,15 @@ const fs = require('fs-extra')
 const path = require('path')
 const http = require('http')
 const rMeta = /^\/([^/]+)$/
-const r302 = /302-(.+)\.tgz$/
+const r302 = /302-(.+)$/
 const rTarball = /^\/([^/]+)\/-\/(.*)$/
 
 let server
 let port = process.env.REGISTRY_PORT || '8723'
 
 exports.url = 'http://localhost:' + port
+
+exports.dirpath = path.resolve(__dirname, '../stub/packages')
 
 exports.startServer = function (cb) {
   server = http.createServer(requestHandler)
@@ -25,7 +27,7 @@ exports.startServer = function (cb) {
       res.end()
     } else if ((match = req.url.match(rMeta))) {
       let name = decodeURIComponent(match[1])
-      let filepath = path.resolve(__dirname, '../stub/packages', name, 'meta.json')
+      let filepath = path.resolve(exports.dirpath, name, 'meta.json')
       fs.readFile(filepath, 'utf8')
       .then(content => {
         res.writeHead(200, {
@@ -33,23 +35,19 @@ exports.startServer = function (cb) {
         })
         res.end(exports.applyStubServer(content))
       })
-      .catch(e => {
-        if (e.code === 'ENOENT') {
-          res.writeHead(404)
-          res.end('package not found')
-        } else {
-          res.writeHead(500)
-          res.end(e.message + '\n' + e.stack)
-        }
-      })
+      .catch(errorHandler(res))
     } else if ((match = req.url.match(rTarball))) {
       let name = decodeURIComponent(match[1])
       let file = match[2]
-      let filepath = path.resolve(__dirname, '../stub/packages', name, file)
-      res.writeHead(200, {
-        'Content-Type': 'application/octet-stream'
+      let filepath = path.resolve(exports.dirpath, name, file)
+      fs.readFile(filepath)
+      .then(file => {
+        res.writeHead(200, {
+          'Content-Type': 'application/octet-stream'
+        })
+        res.end(file)
       })
-      fs.createReadStream(filepath).pipe(res)
+      .catch(errorHandler(res))
     } else {
       res.writeHead(404, {'Content-Type': 'text/plain'})
       res.end()
@@ -63,4 +61,16 @@ exports.applyStubServer = function (url) {
 
 exports.stopServer = function (cb) {
   server.close(cb)
+}
+
+function errorHandler (res) {
+  return e => {
+    if (e.code === 'ENOENT') {
+      res.writeHead(404)
+      res.end('package not found')
+    } else {
+      res.writeHead(500)
+      res.end(e.message + '\n' + e.stack)
+    }
+  }
 }

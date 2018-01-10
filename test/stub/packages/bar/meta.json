@@ -7,7 +7,7 @@
       "author": "harttle <harttle@harttle.com>",
       "amdDependencies": {},
       "dist": {
-        "shasum": "xxx",
+        "shasum": "9e1da6c2cf1053f376105f8fa239d8e93b8a1a02",
         "tarball": "http://apmjs.com/bar/-/bar-1.0.0.tgz"
       }
     },

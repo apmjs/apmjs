@@ -137,7 +137,7 @@ describe('fresh project with package.json', function () {
         dependencies: {
           bar: {
             version: '1.0.0',
-            integrity: 'xxx'
+            integrity: '9e1da6c2cf1053f376105f8fa239d8e93b8a1a02'
           }
         }
       }))

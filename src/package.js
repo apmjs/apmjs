@@ -1,5 +1,11 @@
 'use strict'
+const os = require('os')
+const PassThrough = require('stream').PassThrough
+const Promise = require('bluebird')
+const tarball = require('tarball-extract')
 const findUp = require('../src/utils/fs.js').findUp
+const integrity = require('./utils/integrity.js')
+const writeFileStream = require('./utils/fs.js').writeFileStream
 const assert = require('assert')
 const npm = require('./utils/npm')
 const log = require('npmlog')
@@ -11,7 +17,6 @@ const fs = require('fs-extra')
 const debug = require('debug')('apmjs:package')
 const changeCase = require('change-case')
 const path = require('path')
-const Promise = require('bluebird')
 const SKIP_WRITING_MSG = 'package.json not exist, skip saving...'
 
 function Package (descriptor, pathname) {
@@ -86,13 +91,56 @@ Package.hasInstalled = function (name, version, pathname) {
   return new Package({name, version}).hasInstalled(pathname)
 }
 
-Package.prototype.install = function (prefix) {
+Package.prototype.install = function () {
   let url = this.descriptor.dist.tarball
-  let dir = path.resolve(prefix, this.name)
-  return npm
-    .downloadPackage(url, dir)
+
+  return this.download(url)
+    .then(tarfile => this.untar(tarfile))
     .then(() => this.postInstall())
-    .then(() => this)
+}
+
+Package.prototype.download = function (url) {
+  let tarfile = path.join(os.tmpdir(), `${this.name}.tgz`)
+  return Promise
+    .all([npm.downloadPackage(url), fs.remove(tarfile)])
+    .spread(fileStream => {
+      let checkStream = new PassThrough()
+      let writeStream = new PassThrough()
+      fileStream.pipe(checkStream)
+      fileStream.pipe(writeStream)
+
+      return Promise.all([
+        writeFileStream(writeStream, tarfile),
+        this.checkIntegrity(checkStream)
+      ])
+    })
+    .then(() => tarfile)
+}
+
+Package.prototype.untar = function (tarfile) {
+  let untardir = path.join(os.tmpdir(), `${this.name}`)
+
+  return fs.remove(untardir)
+    .then(() => Promise.fromCallback(
+      cb => tarball.extractTarball(tarfile, untardir, cb)
+    ))
+    // move+override doesn't work for symlinks, remove it anyway
+    .then(() => fs.remove(this.pathname))
+    .then(() => fs.move(path.join(untardir, 'package'), this.pathname))
+}
+
+Package.prototype.checkIntegrity = function (dataStream) {
+  let sri = _.get(this, 'descriptor.dist.integrity')
+  let sha1 = _.get(this, 'descriptor.dist.shasum')
+  if (sri) {
+    log.verbose('integrity', `checking ${this} against ${sri}`)
+    return integrity.checkSRI(dataStream, sri)
+  }
+  if (sha1) {
+    log.verbose('integrity', `checking ${this} against ${sha1}`)
+    return integrity.checkSHA1(dataStream, sha1)
+  }
+  log.warn('integrity', `no integrity/shasum found for ${this}, skipping check`)
 }
 
 Package.prototype.hasInstalled = function (pathname) {
@@ -118,11 +166,16 @@ Package.prototype.postInstall = function () {
   if (!this.pathname) {
     return Promise.reject(new Error('cannot run post-install, setDirname first'))
   }
-  return Promise.all([
+  return Promise
+  .all([
     this.replaceBrowserFiles(),
     this.populatePackageJson(),
     this.writeAMDEntry()
   ])
+  .then(() => {
+    this.status = 'installed'
+    return this
+  })
 }
 
 Package.prototype.populatePackageJson = function () {

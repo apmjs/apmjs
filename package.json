@@ -35,7 +35,8 @@
     "mock-fs": "^4.4.1",
     "node-ramdisk": "^1.2.2",
     "sinon": "^1.17.4",
-    "sinon-chai": "^2.12.0"
+    "sinon-chai": "^2.12.0",
+    "stream-equal": "^1.1.0"
   },
   "author": "harttle <yangjvn@126.com>",
   "license": "MIT",

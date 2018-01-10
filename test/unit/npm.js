@@ -1,6 +1,6 @@
 const fs = require('fs-extra')
-const os = require('os')
 const Promise = require('bluebird')
+const streamEqual = require('stream-equal')
 const error = require('../../src/utils/error.js')
 const path = require('path')
 const debug = require('debug')('apmjs:test:npm')
@@ -15,13 +15,9 @@ describe('npm', function () {
 
   before(() => Promise
     .all([
-      npm.load(),
+      npm.load({'@baidu:registry': registry.url, 'registry': registry.url}),
       Promise.fromCallback(cb => registry.startServer(cb))
     ])
-    .then(() => {
-      npm.config.set('@baidu:registry', registry.url)
-      npm.config.set('registry', registry.url)
-    })
   )
   after(cb => registry.stopServer(cb))
 
@@ -53,35 +49,27 @@ describe('npm', function () {
     })
   })
   describe('downloadPackage', function () {
-    beforeEach(() => fs.remove(
-        path.join(os.tmpdir(), 'amd_modules')
-    ))
-    it('should download and extract', function () {
-      // tarball-extract does not play well with mock-fs
+    it('should resolve a tarball stream', function () {
       return npm
-        .downloadPackage(
-          `${registry.url}/foo/-/foo-1.0.0.tgz`,
-          path.join(os.tmpdir(), 'amd_modules/foo')
-        )
-        .then(() => fs.readJson(path.join(os.tmpdir(), 'amd_modules/foo/package.json')))
-        .then(pkg => expect(pkg.name).to.equal('foo'))
+        .downloadPackage(`${registry.url}/foo/-/foo-1.0.0.tgz`)
+        .then(downloadStream => Promise.fromCallback(cb => streamEqual(
+          fs.createReadStream(path.join(registry.dirpath, 'foo/foo-1.0.0.tgz')),
+          downloadStream,
+          cb
+        )))
     })
-    it('should reject if not exist', function () {
-      return expect(npm.downloadPackage(
-          `${registry.url}/xxx`,
-          path.join(os.tmpdir(), 'amd_modules/foo')
-        ))
+    it('should reject if 404', function () {
+      return expect(npm.downloadPackage(`${registry.url}/xxx`))
         .to.eventually.be.rejectedWith(error.NotFound, '404 Not Found')
     })
     it('should follow 302 redirect', function () {
-      return npm.downloadPackage(
-          `${registry.url}/302-/foo/-/foo-1.0.0.tgz.tgz`,
-          path.join(os.tmpdir(), 'amd_modules/foo')
-        )
-        .then(() => fs.readJson(
-          path.join(os.tmpdir(), 'amd_modules/foo/package.json')
-        ))
-        .then(pkg => expect(pkg.name).to.equal('foo'))
+      return npm.downloadPackage(`${registry.url}/302-/foo/-/foo-1.0.0.tgz`)
+        .then(downloadStream => Promise.fromCallback(cb => streamEqual(
+          fs.createReadStream(path.join(registry.dirpath, 'foo/foo-1.0.0.tgz')),
+          downloadStream,
+          cb
+        )))
+        .then(chai.assert)
     })
   })
 })

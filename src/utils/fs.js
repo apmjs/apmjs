@@ -29,4 +29,12 @@ function catchNoEntry (err) {
   throw err
 }
 
-module.exports = {findUp, catchNoEntry}
+function writeFileStream (stream, filename) {
+  return new Promise((resolve, reject) => {
+    stream.on('error', reject)
+    stream.on('finish', resolve)
+    stream.pipe(fs.createWriteStream(filename))
+  })
+}
+
+module.exports = {findUp, catchNoEntry, writeFileStream}
