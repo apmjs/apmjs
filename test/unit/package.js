@@ -11,7 +11,7 @@ const expect = chai.expect
 const registry = require('../stub/registry.js')
 chai.use(require('chai-as-promised'))
 
-describe('npm', function () {
+describe('Package', function () {
   this.timeout(1000)
 
   before(() => Promise

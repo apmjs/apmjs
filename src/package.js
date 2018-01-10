@@ -94,16 +94,35 @@ Package.hasInstalled = function (name, version, pathname) {
 Package.prototype.install = function () {
   let url = this.descriptor.dist.tarball
 
-  return this.download(url)
-    .then(tarfile => this.untar(tarfile))
-    .then(() => this.postInstall())
+  return this.queryCache()
+  .then(tarfile => tarfile || this.download(url))
+  .then(tarfile => this.untar(tarfile))
+  .then(() => this.postInstall())
+}
+
+Package.prototype.queryCache = function () {
+  let tarfile = path.join(this.cacheDir(), 'package.tgz')
+  return fs.exists(tarfile)
+  .then(exists => {
+    if (!exists) {
+      return null
+    }
+    return tarfile
+    // TODO check integrity if lock exists
+    // return this.checkIntegrity(fs.createReadStream(tarfile))
+  })
+}
+
+Package.prototype.cacheDir = function () {
+  return path.join(npm.config.get('cache'), this.name, this.version)
 }
 
 Package.prototype.download = function (url) {
-  let tarfile = path.join(os.tmpdir(), `${this.name}.tgz`)
-  return Promise
-    .all([npm.downloadPackage(url), fs.remove(tarfile)])
-    .spread(fileStream => {
+  let cachedir = this.cacheDir()
+  let tarfile = path.join(cachedir, 'package.tgz')
+  return fs.emptyDir(cachedir)
+    .then(() => npm.downloadPackage(url))
+    .then(fileStream => {
       let checkStream = new PassThrough()
       let writeStream = new PassThrough()
       fileStream.pipe(checkStream)
@@ -113,6 +132,14 @@ Package.prototype.download = function (url) {
         writeFileStream(writeStream, tarfile),
         this.checkIntegrity(checkStream)
       ])
+    })
+    .catch(e => {
+      if (e instanceof error.IntegrityError) {
+        return fs.remove(cachedir).then(() => {
+          throw e
+        })
+      }
+      throw e
     })
     .then(() => tarfile)
 }
