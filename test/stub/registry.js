@@ -25,7 +25,7 @@ exports.startServer = function (cb) {
       res.end()
     } else if ((match = req.url.match(rMeta))) {
       let name = decodeURIComponent(match[1])
-      let filepath = path.resolve(__dirname, '../stub/repo', name, 'meta.json')
+      let filepath = path.resolve(__dirname, '../stub/packages', name, 'meta.json')
       fs.readFile(filepath, 'utf8')
       .then(content => {
         res.writeHead(200, {
@@ -45,7 +45,7 @@ exports.startServer = function (cb) {
     } else if ((match = req.url.match(rTarball))) {
       let name = decodeURIComponent(match[1])
       let file = match[2]
-      let filepath = path.resolve(__dirname, '../stub/repo', name, file)
+      let filepath = path.resolve(__dirname, '../stub/packages', name, file)
       res.writeHead(200, {
         'Content-Type': 'application/octet-stream'
       })

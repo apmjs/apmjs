@@ -1,7 +1,6 @@
 const fs = require('fs-extra')
 const os = require('os')
 const Promise = require('bluebird')
-// const Workspace = require('../stub/workspace')
 const error = require('../../src/utils/error.js')
 const path = require('path')
 const debug = require('debug')('apmjs:test:npm')

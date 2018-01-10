@@ -1,15 +1,13 @@
 const chai = require('chai')
+const registry = require('../stub/registry.js')
 const sinon = require('sinon')
 const log = require('npmlog')
-const path = require('path')
-const fs = require('fs-extra')
 const expect = chai.expect
 const Promise = require('bluebird')
 const npm = require('../../src/utils/npm.js')
 const _ = require('lodash')
 const error = require('../../src/utils/error.js')
 const debug = require('debug')('apmjs:test:tree-node')
-const nock = require('nock')
 const TreeNode = require('../../src/resolver/tree-node.js')
 chai.use(require('sinon-chai'))
 chai.use(require('chai-as-promised'))
@@ -18,19 +16,18 @@ require('mocha-sinon')
 describe('TreeNode', function () {
   this.timeout(1000)
 
-  before(() => {
-    ['foo', 'bar', 'baz', 'baa', 'coo', 'laa', 'hoo', 'haa']
-    .reduce((server, id) => {
-      var file = path.resolve(__dirname, `../stub/${id}.info.json`)
-      return server.get(`/${id}`).reply(200, fs.readFileSync(file))
-    }, nock('http://apm'))
-    return npm.load()
+  before(() => Promise
+    .all([
+      npm.load(),
+      Promise.fromCallback(cb => registry.startServer(cb))
+    ])
     .then(() => {
-      npm.config.set('@baidu:registry', 'http://apm')
-      npm.config.set('registry', 'http://apm')
+      npm.config.set('@baidu:registry', registry.url)
+      npm.config.set('registry', registry.url)
     })
-  })
-  after(() => nock.cleanAll())
+  )
+  after(cb => registry.stopServer(cb))
+
   beforeEach(() => {
     TreeNode.nodes = {}
     TreeNode.pending = {}
@@ -70,7 +67,7 @@ describe('TreeNode', function () {
       var parent = new TreeNode({name: 'parent'})
       return parent.addDependency('bar').then(bar => {
         expect(bar.name).to.equal('bar')
-        expect(bar.version).to.equal('1.0.1')
+        expect(bar.version).to.equal('1.1.0')
       })
     })
     it('should not throw when creating the same', function () {
@@ -108,36 +105,36 @@ describe('TreeNode', function () {
     it('should install latest available', function () {
       var root = new TreeNode({
         name: 'root',
-        dependencies: { foo: '1.0.0', baz: '1.x' }
+        dependencies: { foo: '1.0.0', bar: '*' }
       })
       return root.populateChildren().then(() => {
         expect(_.size(TreeNode.nodes)).to.equal(3)
-        expect(TreeNode.nodes.baz).to.have.property('version', '1.1.0')
+        expect(TreeNode.nodes.bar).to.have.property('version', '1.1.0')
       })
     })
-    it('should install latest compatible', function () {
+    it('should install latest satisfying', function () {
       var root = new TreeNode({
         name: 'root',
         version: '1.0.0',
-        dependencies: { foo: '1.0.0', baz: '1.0.x' }
+        dependencies: { foo: '1.0.0', bar: '1.0.x' }
       })
       return root.populateChildren().then(() => {
         expect(_.size(TreeNode.nodes)).to.equal(3)
-        expect(TreeNode.nodes.baz).to.have.property('version', '1.0.1')
+        expect(TreeNode.nodes.bar).to.have.property('version', '1.0.1')
       })
     })
     it('should print dependency tree', function () {
       var root = new TreeNode({
         name: 'root',
         version: '1.0.0',
-        dependencies: { foo: '1.0.0', baz: '1.0.x' }
+        dependencies: { foo: '1.0.0', bar: '1.0.x' }
       })
       return root.populateChildren().then(() => {
         root.printTree()
         var tree = [
           'root@1.0.0',
           '├── foo@1.0.0',
-          '└── baz@1.0.1'
+          '└── bar@1.0.1'
         ].join('\n')
         expect(console.log).to.have.been.calledOnce
         expect(console.log.args[0][0]).to.equal(tree)
@@ -147,10 +144,10 @@ describe('TreeNode', function () {
       var root = new TreeNode({
         name: 'root',
         version: '1.0.0',
-        dependencies: { bar: '1.0.0', coo: '1.0.x' }
+        dependencies: { bar: '1.1.0', coo: '1.0.x' }
       })
       return root.populateChildren().then(() => {
-        var msg = 'version conflict: upgrade bar@1.0.0 (required by root@1.0.0) to match 1.0.1 (required by coo@1.0.1)'
+        var msg = 'version conflict: upgrade bar@<=1.0.0 (required by coo@1.0.0) to match 1.1.0 (required by root@1.0.0)'
         expect(log.error).to.have.been.called
         expect(log.error.args[0][0]).to.equal(msg)
       })
@@ -159,10 +156,10 @@ describe('TreeNode', function () {
       var root = new TreeNode({
         version: '0.0.1',
         name: 'root',
-        dependencies: { bar: '1.0.x', laa: '1.0.0' }
+        dependencies: { bar: '1.0.x', coo: '1.0.0' }
       })
       return root.populateChildren().then(() => {
-        var msg = 'version conflict: upgrade bar@1.0.0 (required by laa@1.0.0) to match 1.0.x (required by root@0.0.1)'
+        var msg = 'version conflict: upgrade bar@<=1.0.0 (required by coo@1.0.0) to match 1.0.x (required by root@0.0.1)'
         expect(log.error).to.have.been.called
         expect(log.error.args[0][0]).to.equal(msg)
       })
