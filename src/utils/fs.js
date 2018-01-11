@@ -1,3 +1,4 @@
+'use strict'
 const fs = require('fs-extra')
 const log = require('npmlog')
 const Promise = require('bluebird')

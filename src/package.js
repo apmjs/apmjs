@@ -4,7 +4,6 @@ const PassThrough = require('stream').PassThrough
 const Promise = require('bluebird')
 const tarball = require('tarball-extract')
 const Lock = require('./resolver/lock.js')
-const findUp = require('./utils/fs.js').findUp
 const integrity = require('./utils/integrity.js')
 const writeFileStream = require('./utils/fs.js').writeFileStream
 const assert = require('assert')
@@ -33,36 +32,42 @@ function Package (descriptor, pathname) {
   }
 }
 
-Package.loadModule = function (name) {
-  return Package.loadByPath(path.resolve(npm.dir, name))
+Package.loadModule = function (name, pathname) {
+  return Package.loadByPath(path.resolve(pathname || npm.dir, name))
 }
 
 Package.loadByPath = function (pathname) {
-  return Promise.resolve(path.resolve(pathname, 'package.json'))
+  let pkgPath = path.resolve(pathname, 'package.json')
+  log.verbose('package', 'loading package:', pkgPath)
+  return Promise.resolve(pkgPath)
     .then(file => fs.readJson(file))
     .then(descriptor => new Package(descriptor, pathname))
 }
 
-Package.load = function (pathname) {
-  return findUp('package.json', pathname)
-    .then(filepath => path.dirname(filepath))
-    .then(dirpath => Package.loadByPath(dirpath))
-}
-
-Package.createByDirectory = function (dir) {
+Package.createInMemory = function (dir) {
   var pkg = new Package({name: 'root'}, dir || process.cwd())
   pkg.noPackageJSON = true
   return pkg
 }
 
-Package.loadOrCreate = function (pathname) {
-  return Package.load(pathname)
-    .catch(err => {
-      if (err.code === 'ENOENT') {
-        return Package.createByDirectory()
-      }
-      throw err
-    })
+Package.load = function (current) {
+  current = current || process.cwd()
+  log.silly('finding package from', current, '...')
+  var fPackage = path.resolve(current, 'package.json')
+  var fModules = path.resolve(current, 'amd_modules')
+  return Promise
+  .all([fs.pathExists(fPackage), fs.pathExists(fModules)])
+  .spread((ePackage, eModules) => {
+    if (ePackage || eModules) {
+      return ePackage ? Package.loadByPath(current) : Package.createInMemory(current)
+    }
+    var parentPath = path.resolve(current, '..')
+    if (parentPath === current) {
+      log.info(`currnet package not found, creating in-memory package`)
+      return Package.createInMemory()
+    }
+    return Package.load(parentPath)
+  })
 }
 
 /**
@@ -89,8 +94,8 @@ Package.createMaxSatisfying = function (info, semver, tracing) {
 /**
  * @param {String} version if not specified, all versions are OK
  */
-Package.hasInstalled = function (name, version, pathname) {
-  return new Package({name, version}).hasInstalled(pathname)
+Package.alreadyInstalled = function (name, version, pathname) {
+  return new Package({name, version}).alreadyInstalled(pathname)
 }
 
 Package.prototype.install = function (lock) {
@@ -106,15 +111,28 @@ Package.prototype.install = function (lock) {
 
 Package.prototype.queryCache = function () {
   let tarfile = path.join(this.cacheDir(), 'package.tgz')
-  log.silly('package', `querying cache for ${this}`)
+  log.silly('cache', `querying cache for ${this}`)
   return fs.exists(tarfile)
   .then(exists => {
     if (!exists) {
+      throw new error.CacheMiss()
+    }
+    return this.checkIntegrity(fs.createReadStream(tarfile))
+  })
+  .then(() => {
+    log.verbose('cache', `use cache for ${this}`)
+    return tarfile
+  })
+  .catch(e => {
+    if (e.code === 'ECACHEMISS') {
+      log.verbose('cache', `cache miss for ${this}`)
       return null
     }
-    return tarfile
-    // TODO check integrity if lock exists
-    // return this.checkIntegrity(fs.createReadStream(tarfile))
+    if (e.code === 'EINTEGRITY') {
+      log.verbose('cache', `integrity failed for ${this}`)
+      return null
+    }
+    throw e
   })
 }
 
@@ -176,8 +194,8 @@ Package.prototype.checkIntegrity = function (dataStream) {
   dataStream.pipe(sCheck)
 
   let todo = [integrity.getSRI(sParse).then(sri => {
-    log.verbose(`integrity generated for ${this}: sri`)
-    this.integrity = sri
+    log.verbose(`integrity generated for ${this}: ${sri}`)
+    return sri
   })]
   if (sha1) {
     log.verbose('integrity', `sha1 checking ${this} against ${sha1}`)
@@ -185,26 +203,26 @@ Package.prototype.checkIntegrity = function (dataStream) {
   } else {
     log.warn('integrity', `no integrity/shasum found for ${this}, skipping check`)
   }
-  return Promise.all(todo)
+  return Promise.all(todo).spread(sri => (this.integrity = sri))
 }
 
-Package.prototype.hasInstalled = function (pathname) {
-  return fs.readJson(path.join(pathname, this.name, 'package.json'))
-    .then(json => {
-      if (json.name !== this.name) {
-        return false
-      }
-      if (this.version && this.version !== json.version) {
-        return false
-      }
-      return true
-    })
-    .catch(e => {
-      if (e.code === 'ENOENT') {
-        return false
-      }
-      throw e
-    })
+Package.prototype.alreadyInstalled = function (pathname) {
+  return Package.loadModule(this.name, pathname)
+  .then(json => {
+    if (json.name !== this.name) {
+      return false
+    }
+    if (this.version && this.version !== json.version) {
+      return false
+    }
+    return true
+  })
+  .catch(e => {
+    if (e.code === 'ENOENT') {
+      return false
+    }
+    throw e
+  })
 }
 
 Package.prototype.postInstall = function () {

@@ -10,7 +10,7 @@ function install (dependencies, errorHandler, conf) {
   let save = conf['save']
   let deps = dependencies.map(version.parseDependencyDeclaration)
 
-  return Package.loadOrCreate()
+  return Package.load()
     .then(pkg => resolver.loadRoot(pkg))
     .then(root => {
       let installer = new Installer(root, {save})

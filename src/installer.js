@@ -22,7 +22,7 @@ function Installer (root, options) {
 
 Installer.createToGlobalRoot = function () {
   let pathname = path.resolve(npm.globalPrefix, 'lib')
-  let pkg = Package.createByDirectory(pathname)
+  let pkg = Package.createInMemory(pathname)
   let node = new TreeNode(pkg)
   return new Installer(node)
 }
@@ -41,7 +41,7 @@ Installer.prototype.install = function (packages) {
   }
   return Promise
     .map(packages, pkg => pkg.setDirname(this.modulesPath))
-    .filter(pkg => pkg.hasInstalled(this.modulesPath).then(x => !x))
+    .filter(pkg => pkg.alreadyInstalled(this.modulesPath).then(x => !x))
     .map(pkg => pkg.install())
     .then(() => this.postInstall())
 }

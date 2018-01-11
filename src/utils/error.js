@@ -23,6 +23,14 @@ function PackageNotFound (name, parent) {
 }
 util.inherits(PackageNotFound, Error)
 
+function CacheMiss (message) {
+  Error.captureStackTrace(this, this.constructor)
+  this.name = this.constructor.name
+  this.code = 'ECACHEMISS'
+  this.message = message || `cache miss`
+}
+util.inherits(CacheMiss, Error)
+
 function IntegrityError (message) {
   Error.captureStackTrace(this, this.constructor)
   this.name = this.constructor.name
@@ -68,4 +76,4 @@ function HTTP (status) {
 }
 util.inherits(HTTP, Error)
 
-module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName, InvalidPackageMeta, HTTP, createFrom, IntegrityError}
+module.exports = {PackageNotFound, UnmetDependency, InvalidPackageName, InvalidPackageMeta, HTTP, createFrom, IntegrityError, CacheMiss}

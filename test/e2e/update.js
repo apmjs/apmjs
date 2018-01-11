@@ -19,7 +19,7 @@ describe('update a package', function () {
     .tap(ws => (workspace = ws))
   )
   it('should update direct dependency', function () {
-    return workspace.run('$APM update')
+    return workspace.run('$APM update --loglevel silly')
       .then(() => workspace.readJson(`amd_modules/doo/package.json`))
       .then(bar => expect(bar).to.have.property('version', '1.0.1'))
       .then(() => workspace.readJson(`amd_modules/eow/package.json`))

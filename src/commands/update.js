@@ -9,7 +9,7 @@ const Package = require('../package.js')
 module.exports = function (dependencies, errorHandler) {
   let deps = dependencies.map(version.parseDependencyDeclaration)
 
-  return Package.loadOrCreate()
+  return Package.load()
     .then(pkg => resolver.loadRoot(pkg, {
       update: dependencies.length === 0
     }))

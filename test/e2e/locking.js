@@ -54,7 +54,7 @@ describe('locking', function () {
         }`,
         'amd-lock.json': `{"dependencies": {
           "doo": {"version": "1.0.0"},
-          "bar": {"version": "1.0.0"}
+          "bar": {"version": "1.0.0", "integrity": "sha512-hssCTy6V5o2Lpakooc5SdtaT+idGKd+6+meJBNXggzV+aFLmdMvk7N4BjKfNJSs4HaUnpFrt7f6XGAzKQ/LpwQ=="}
         }}`
       })
       .then(ws => {
@@ -62,7 +62,7 @@ describe('locking', function () {
         return workspace.run('$APM install')
       })
     )
-    it('should not change anything when installed again', function () {
+    it('should not change locked version when installed again', function () {
       return workspace.run('$APM install bar')
       .then(() => workspace.readJson(`amd-lock.json`))
       .then(lock => {
@@ -70,7 +70,15 @@ describe('locking', function () {
         expect(lock).to.have.nested.property('dependencies.bar.version', '1.0.0')
       })
     })
-    it('should not change anything when installed again with --save', function () {
+    it('should generate integrity', function () {
+      return workspace.run('$APM install bar --save')
+      .then(() => workspace.readJson(`amd-lock.json`))
+      .then(lock => {
+        expect(lock).to.have.nested.property('dependencies.doo.integrity', 'sha512-kg2DYN5eVb3kJfC/MuyB/IAWaQ+oKA73xi/ugxwhhP9Zg4jxFzKYzUNu4fQDbX/yS28NJm3DTpZchUXQc+ZTQg==')
+        expect(lock).to.have.nested.property('dependencies.bar.integrity', 'sha512-hssCTy6V5o2Lpakooc5SdtaT+idGKd+6+meJBNXggzV+aFLmdMvk7N4BjKfNJSs4HaUnpFrt7f6XGAzKQ/LpwQ==')
+      })
+    })
+    it('should not change locked version when installed again with --save', function () {
       return workspace.run('$APM install bar --save')
       .then(() => workspace.readJson(`amd-lock.json`))
       .then(lock => {
