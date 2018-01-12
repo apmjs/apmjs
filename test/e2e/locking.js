@@ -94,6 +94,20 @@ describe('locking', function () {
         expect(lock).to.have.nested.property('dependencies.bar.version', '1.0.1')
       })
     })
+    it('should maintain ascending key order', function () {
+      return Workspace.create({
+        'package.json': JSON.stringify({
+          name: 'main',
+          amdDependencies: { foo: '^1.0.0' }
+        })
+      }).then(ws => ws
+        .run('$APM install bar --save')
+        .then(() => ws.readJson(`amd-lock.json`))
+        .then(foo => {
+          var deps = JSON.stringify(foo.dependencies)
+          expect(deps).to.equal('{"bar":{"version":"1.1.0","integrity":"sha512-1DGxCEdigE5Rz8gaHEwtrLCVP3BpjpCbROpZePmu4GoL656RsKmbNBLoR29v8XOyQaP+Qx/LAFo59w6R/X3gJw=="},"foo":{"version":"1.0.0","integrity":"sha512-URO90jLnKPqX+P7OLnJkiIQfMX4I6gEdGZ1T84drQLtRPw6uNKYLZfB6K3hjWIrj0VZB1kh2cTFdeq01i6XIYQ=="}}')
+        }))
+    })
   })
 
   describe('not satisfied lock', function () {

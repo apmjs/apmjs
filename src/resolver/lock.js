@@ -26,15 +26,30 @@ exports.getVersion = function (name) {
   return exports.getPackage(name).version
 }
 
+exports.saveLockfile = function (root, packages) {
+  var lock = {
+    name: root.name,
+    version: root.version,
+    dependencies: {}
+  }
+  packages.sort((lhs, rhs) => lhs.name > rhs.name ? 1 : -1).forEach(pkg => {
+    let version = pkg.version
+    let integrity = pkg.integrity
+
+    lock.dependencies[pkg.name] = { version, integrity }
+  })
+  return fs.writeJson(root.lockfilePath, lock, {spaces: 2})
+}
+
 exports.loadLockfile = function (filepath) {
   log.verbose(`loading lock file from ${filepath}`)
   return fs.readJson(filepath)
-    .then(lock => {
-      log.silly('lock', 'loaded from', filepath, lock)
-      exports.lock = lock
-    })
-    .catch(catchNoEntry)
-    .catch(e => {
-      throw error.createFrom(e, `failed to load lockfile ${filepath}`)
-    })
+  .then(lock => {
+    log.silly('lock', 'loaded from', filepath, lock)
+    exports.lock = lock
+  })
+  .catch(catchNoEntry)
+  .catch(e => {
+    throw error.createFrom(e, `failed to load lockfile ${filepath}`)
+  })
 }

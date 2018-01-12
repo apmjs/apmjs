@@ -37,6 +37,20 @@ describe('fresh project with package.json', function () {
           })
        )
     })
+    it('should maintain ascending key order', function () {
+      return Workspace.create({
+        'package.json': JSON.stringify({
+          name: 'main',
+          amdDependencies: { foo: '^1.0.0' }
+        })
+      }).then(ws => ws
+        .run('$APM install bar --save')
+        .then(() => ws.readJson(`package.json`))
+        .then(foo => {
+          var deps = JSON.stringify(foo.amdDependencies)
+          expect(deps).to.equal('{"bar":"^1.1.0","foo":"^1.0.0"}')
+        }))
+    })
   })
 
   it('should install a single package', function () {

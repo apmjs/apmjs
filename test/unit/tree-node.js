@@ -86,7 +86,7 @@ describe('TreeNode', function () {
       return expect(parent.addDependency('bar', '2.0.0'))
         .to.be.rejectedWith(
           error.UnmetDependency,
-          /bar@2.0.0 not available, required by parent/
+          'package bar@2.0.0 (required by parent) not available, available: 1.0.0,1.0.1,1.1.0'
         )
     })
   })

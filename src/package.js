@@ -342,7 +342,7 @@ Package.prototype.saveDependencies = function (nodes, save) {
             : this.dependencies[node.name]
         }
       })
-      descriptor.amdDependencies = deps
+      descriptor.amdDependencies = _.chain(deps).toPairs().sort().fromPairs()
       return fs.writeJson(this.descriptorPath, descriptor, {spaces: 2})
     })
     .catch(e => {
@@ -351,21 +351,6 @@ Package.prototype.saveDependencies = function (nodes, save) {
       }
       log.info(SKIP_WRITING_MSG)
     })
-}
-
-Package.prototype.saveLocks = function (packages) {
-  var lock = {
-    name: this.name,
-    version: this.version,
-    dependencies: {}
-  }
-  packages.forEach(pkg => {
-    let version = pkg.version
-    let integrity = pkg.integrity
-
-    lock.dependencies[pkg.name] = { version, integrity }
-  })
-  return fs.writeJson(this.lockfilePath, lock, {spaces: 2})
 }
 
 Package.prototype.read = function () {

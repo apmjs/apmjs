@@ -1,5 +1,6 @@
 'use strict'
 const Package = require('./package.js')
+const Lock = require('./resolver/lock.js')
 const log = require('npmlog')
 const TreeNode = require('./resolver/tree-node')
 const resolver = require('./resolver')
@@ -49,7 +50,7 @@ Installer.prototype.install = function (packages) {
 Installer.prototype.postInstall = function () {
   return Promise.all([
     this.hasPackageJSON && this.pkg.saveDependencies(this.root.children, this.save),
-    this.pkg.saveLocks(resolver.getSavedPackages()),
+    Lock.saveLockfile(this.pkg, resolver.getSavedPackages()),
     this.createIndex(resolver.getDependantPackages())
   ])
 }

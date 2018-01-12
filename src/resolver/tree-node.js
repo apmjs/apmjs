@@ -98,9 +98,10 @@ TreeNode.prototype.createRemoteNode = function (name, semver) {
   return npm
     .getPackageMeta(name, this.pkg)
     .then(info => {
-      let version = Version.maxSatisfying(_.keys(info.versions), semver || '*')
+      let availableVersions = _.keys(info.versions)
+      let version = Version.maxSatisfying(availableVersions, semver || '*')
       if (!version) {
-        let msg = `package ${name}${semver && ('@' + semver)} not available, required by ${this}`
+        let msg = `package ${name}${semver && ('@' + semver)} (required by ${this}) not available, available: ${availableVersions}`
         throw new error.UnmetDependency(msg)
       }
       let pkg = new Package(info.versions[version])
