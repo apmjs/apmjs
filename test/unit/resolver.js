@@ -1,4 +1,5 @@
 const chai = require('chai')
+const Package = require('../../src/package.js')
 const registry = require('../stub/registry.js')
 const Lock = require('../../src/resolver/lock.js')
 const Promise = require('bluebird')
@@ -26,11 +27,11 @@ describe('resolver', function () {
 
   describe('.getDependantPackages()', function () {
     beforeEach(function () {
-      var root = new TreeNode({
+      var root = new TreeNode(new Package({
         version: '0.0.1',
         name: 'root',
-        dependencies: { bar: '1.0.x', foo: '1.0.0' }
-      })
+        amdDependencies: { bar: '1.0.x', foo: '1.0.0' }
+      }))
       root.isRoot = true
       return root.populateChildren()
     })

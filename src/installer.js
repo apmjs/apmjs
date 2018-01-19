@@ -42,7 +42,7 @@ Installer.prototype.install = function (packages) {
   }
   return Promise
     .map(packages, pkg => pkg.setDirname(this.modulesPath))
-    .filter(pkg => pkg.alreadyInstalled(this.modulesPath).then(x => !x))
+    .filter(pkg => this.pkg.dependencyInstalled(pkg).then(x => !x))
     .map(pkg => pkg.install())
     .then(() => this.postInstall())
 }

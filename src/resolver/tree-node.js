@@ -74,7 +74,7 @@ TreeNode.prototype.installDependency = function (name, semver, saved) {
 
 TreeNode.prototype.tryCreateLocalNode = function (name, semver) {
   log.silly(`creating local node for ${name}@${semver}`)
-  return Package.loadModule(name)
+  return this.pkg.loadDependency(name)
     .then(pkg => {
       if (Version.satisfies(pkg.version, semver)) {
         log.silly(`local node created ${pkg}`)

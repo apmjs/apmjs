@@ -25,7 +25,7 @@ function linkCurrent () {
 }
 
 function loadOrInstall (name, semver) {
-  return Package.alreadyInstalled(name, null, npm.globalDir)
+  return Package.createGlobalRoot().dependencyInstalled({name})
     .then(installed => installed
       ? Package.load(path.resolve(npm.globalDir, name))
       : Installer.globalInstall(name, semver)

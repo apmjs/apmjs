@@ -1,4 +1,5 @@
 const chai = require('chai')
+const Package = require('../../src/package.js')
 const registry = require('../stub/registry.js')
 const sinon = require('sinon')
 const Lock = require('../../src/resolver/lock.js')
@@ -39,7 +40,7 @@ describe('TreeNode', function () {
   })
   describe('#addDependency()', function () {
     it('should retrieve info and create a TreeNode', function () {
-      var parent = new TreeNode({name: 'parent', dependencies: {'foo': '1.0.x'}})
+      var parent = new TreeNode(new Package({name: 'parent', amdDependencies: {'foo': '1.0.x'}}))
       return parent.addDependency('foo').then(foo => {
         expect(_.size(TreeNode.nodes)).to.equal(2)
         expect(foo.name).to.equal('foo')
@@ -47,42 +48,42 @@ describe('TreeNode', function () {
       })
     })
     it('should append the TreeNode as child', function () {
-      var parent = new TreeNode({name: 'parent', dependencies: {'foo': '1.0.x'}})
+      var parent = new TreeNode(new Package({name: 'parent', amdDependencies: {'foo': '1.0.x'}}))
       return parent.addDependency('foo').then(() => {
         var parent = TreeNode.nodes.parent
         expect(parent.children.foo).to.have.property('name', 'foo')
       })
     })
     it('should take specified version over dependencies', function () {
-      var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.0.1'}})
+      var parent = new TreeNode(new Package({name: 'parent', amdDependencies: {'bar': '1.0.1'}}))
       return parent.addDependency('bar', '<=1.0.0').then(bar => {
         expect(bar.name).to.equal('bar')
         expect(bar.version).to.equal('1.0.0')
       })
     })
     it('should install latest if not listed in dependencies', function () {
-      var parent = new TreeNode({name: 'parent'})
+      var parent = new TreeNode(new Package({name: 'parent'}))
       return parent.addDependency('bar').then(bar => {
         expect(bar.name).to.equal('bar')
         expect(bar.version).to.equal('1.1.0')
       })
     })
     it('should not throw when creating the same', function () {
-      var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.x'}})
+      var parent = new TreeNode(new Package({name: 'parent', amdDependencies: {'bar': '1.x'}}))
       return parent.addDependency('bar').then(() => {
         expect(parent.addDependency('bar')).to.be.fulfilled
       })
     })
     it('should not create new if already exist', function () {
       expect(_.size(TreeNode.nodes)).to.equal(0)
-      var parent = new TreeNode({name: 'parent', dependencies: {'bar': '1.x'}})
+      var parent = new TreeNode(new Package({name: 'parent', amdDependencies: {'bar': '1.x'}}))
       expect(_.size(TreeNode.nodes)).to.equal(1)
       return Promise
         .each(['bar', 'bar', 'bar'], id => parent.addDependency(id, '1.x'))
         .then(() => expect(_.size(TreeNode.nodes)).to.equal(2))
     })
     it('should throw when not available', function () {
-      var parent = new TreeNode({name: 'parent', dependencies: {'bar': '2.0.0'}})
+      var parent = new TreeNode(new Package({name: 'parent', amdDependencies: {'bar': '2.0.0'}}))
       return expect(parent.addDependency('bar', '2.0.0'))
         .to.be.rejectedWith(
           error.UnmetDependency,
@@ -100,32 +101,32 @@ describe('TreeNode', function () {
       console.log.restore()
     })
     it('should install latest available', function () {
-      var root = new TreeNode({
+      var root = new TreeNode(new Package({
         name: 'root',
-        dependencies: { foo: '1.0.0', bar: '*' }
-      })
+        amdDependencies: { foo: '1.0.0', bar: '*' }
+      }))
       return root.populateChildren().then(() => {
         expect(_.size(TreeNode.nodes)).to.equal(3)
         expect(TreeNode.nodes.bar).to.have.property('version', '1.1.0')
       })
     })
     it('should install latest satisfying', function () {
-      var root = new TreeNode({
+      var root = new TreeNode(new Package({
         name: 'root',
         version: '1.0.0',
-        dependencies: { foo: '1.0.0', bar: '1.0.x' }
-      })
+        amdDependencies: { foo: '1.0.0', bar: '1.0.x' }
+      }))
       return root.populateChildren().then(() => {
         expect(_.size(TreeNode.nodes)).to.equal(3)
         expect(TreeNode.nodes.bar).to.have.property('version', '1.0.1')
       })
     })
     it('should print dependency tree', function () {
-      var root = new TreeNode({
+      var root = new TreeNode(new Package({
         name: 'root',
         version: '1.0.0',
-        dependencies: { foo: '1.0.0', bar: '1.0.x' }
-      })
+        amdDependencies: { foo: '1.0.0', bar: '1.0.x' }
+      }))
       return root.populateChildren().then(() => {
         root.printTree()
         var tree = [
@@ -138,11 +139,11 @@ describe('TreeNode', function () {
       })
     })
     it('should warn to upgrade former packages', function () {
-      var root = new TreeNode({
+      var root = new TreeNode(new Package({
         name: 'root',
         version: '1.0.0',
-        dependencies: { bar: '1.1.0', coo: '1.0.x' }
-      })
+        amdDependencies: { bar: '1.1.0', coo: '1.0.x' }
+      }))
       return root.populateChildren().then(() => {
         var msg = 'version conflict: upgrade bar@<=1.0.0 (required by coo@1.0.0) to match 1.1.0 (required by root@1.0.0)'
         expect(log.error).to.have.been.called
@@ -150,11 +151,11 @@ describe('TreeNode', function () {
       })
     })
     it('should warn to upgrade latter packages', function () {
-      var root = new TreeNode({
+      var root = new TreeNode(new Package({
         version: '0.0.1',
         name: 'root',
-        dependencies: { bar: '1.0.x', coo: '1.0.0' }
-      })
+        amdDependencies: { bar: '1.0.x', coo: '1.0.0' }
+      }))
       return root.populateChildren().then(() => {
         var msg = 'version conflict: upgrade bar@<=1.0.0 (required by coo@1.0.0) to match 1.0.x (required by root@0.0.1)'
         expect(log.error).to.have.been.called

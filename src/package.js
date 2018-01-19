@@ -32,8 +32,8 @@ function Package (descriptor, pathname) {
   }
 }
 
-Package.loadModule = function (name, pathname) {
-  return Package.loadByPath(path.resolve(pathname || npm.dir, name))
+Package.prototype.loadDependency = function (name) {
+  return Package.loadByPath(path.resolve(this.modulesPath || npm.dir, name))
 }
 
 Package.loadByPath = function (pathname) {
@@ -42,6 +42,13 @@ Package.loadByPath = function (pathname) {
   return Promise.resolve(pkgPath)
     .then(file => fs.readJson(file))
     .then(descriptor => new Package(descriptor, pathname))
+}
+
+Package.createGlobalRoot = function () {
+  log.silly('global', npm.globalDir)
+  let pathname = path.resolve(npm.globalDir, '..')
+  log.silly('pathname', pathname)
+  return Package.createInMemory(pathname)
 }
 
 Package.createInMemory = function (dir) {
@@ -89,13 +96,6 @@ Package.createMaxSatisfying = function (info, semver, tracing) {
     throw new error.UnmetDependency(msg)
   }
   return maxSatisfiying
-}
-
-/**
- * @param {String} version if not specified, all versions are OK
- */
-Package.alreadyInstalled = function (name, version, pathname) {
-  return new Package({name, version}).alreadyInstalled(pathname)
 }
 
 Package.prototype.install = function (lock) {
@@ -206,14 +206,14 @@ Package.prototype.checkIntegrity = function (dataStream) {
   return Promise.all(todo).spread(sri => (this.integrity = sri))
 }
 
-Package.prototype.alreadyInstalled = function (pathname) {
-  return Package.loadModule(this.name, pathname)
+Package.prototype.dependencyInstalled = function (pkg) {
+  return this.loadDependency(pkg.name)
   .then(json => {
-    if (json.name !== this.name) {
+    if (json.name !== pkg.name) {
       return false
     }
-    if (this.version && this.version !== json.version) {
-      return false
+    if (pkg.version) {
+      return pkg.version === json.version
     }
     return true
   })
