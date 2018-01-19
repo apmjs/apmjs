@@ -313,7 +313,7 @@ Package.prototype.setPathname = function (pathname) {
   this.amdpath = pathname + '.js'
   this.pathname = pathname
   this.descriptorPath = path.resolve(pathname, 'package.json')
-  this.modulesPath = path.resolve(pathname, 'amd_modules')
+  this.modulesPath = path.resolve(pathname, descriptor.amdPrefix || 'amd_modules')
   this.lockfilePath = path.resolve(pathname, 'amd-lock.json')
   return this
 }

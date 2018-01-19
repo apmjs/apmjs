@@ -21,6 +21,18 @@ describe('fresh project with package.json', function () {
        )
     })
 
+    it('should resect amdPrefix', function () {
+      return Workspace.create({'package.json': '{ "name": "main", "amdPrefix": "hei/haa" }'})
+        .then(ws => ws
+          .run('$APM install bar')
+          .then(() => ws.readJson(`hei/haa/bar/package.json`))
+          .then(foo => {
+            expect(foo).to.have.property('name', 'bar')
+            expect(foo).to.have.property('version', '1.1.0')
+          })
+       )
+    })
+
     it('should install and save a package', function () {
       return Workspace.create({'package.json': JSON.stringify({ name: 'main' })})
         .then(ws => ws
@@ -112,26 +124,44 @@ describe('fresh project with package.json', function () {
     )
   })
 
-  it('should write index.json', function () {
-    return Workspace
-    .create({
-      'package.json': JSON.stringify({
-        name: 'main',
-        amdDependencies: { bar: '1.0.0' }
+  describe('index.json', function () {
+    it('should contain package version and path', function () {
+      return Workspace
+      .create({
+        'package.json': JSON.stringify({
+          name: 'main',
+          amdDependencies: { bar: '1.0.0' }
+        })
       })
+      .then(ws => ws
+        .run('$APM install')
+        .then(() => ws.readJson(`amd_modules/index.json`))
+        .then(index => expect(index).to.deep.equal(
+          [{
+            name: 'bar',
+            version: '1.0.0',
+            filepath: 'bar/index.js',
+            fullpath: ws.dirpath + '/amd_modules/bar/index.js'
+          }]
+        ))
+      )
     })
-    .then(ws => ws
-      .run('$APM install')
-      .then(() => ws.readJson(`amd_modules/index.json`))
-      .then(index => expect(index).to.deep.equal(
-        [{
-          name: 'bar',
-          version: '1.0.0',
-          filepath: 'bar/index.js',
-          fullpath: ws.dirpath + '/amd_modules/bar/index.js'
-        }]
-      ))
-    )
+
+    it('should resect amdPrefix', function () {
+      return Workspace.create({'package.json': '{ "name": "main", "amdPrefix": "hei/haa" }'})
+      .then(ws => ws
+        .run('$APM install bar')
+        .then(() => ws.readJson(`hei/haa/index.json`))
+        .then(index => expect(index).to.deep.equal(
+          [{
+            name: 'bar',
+            version: '1.1.0',
+            filepath: 'bar/index.js',
+            fullpath: ws.dirpath + '/hei/haa/bar/index.js'
+          }]
+        ))
+      )
+    })
   })
 
   it('should write amd-lock.json', function () {
