@@ -88,11 +88,11 @@ describe('linking', function () {
   describe('unlink local package', function () {
     it('should unlink if not linked', function () {
       let tree = {
-        'foo/package.json': '{ "name": "foo" }'
+        'foo/package.json': '{ "name": "foo", "amdPrefix": "haa/hoo" }'
       }
       return Workspace.create(tree).then(ws => ws
         .run(`cd foo && $APM unlink bar --prefix ${ws.dirpath}`)
-        .then(result => expect(result.stdout).to.contain(`unlink ${ws.dirpath}/foo/amd_modules/bar`))
+        .then(result => expect(result.stdout).to.contain(`unlink ${ws.dirpath}/foo/haa/hoo/bar`))
       )
     })
     it('should unlink if installed already', function () {
@@ -145,6 +145,20 @@ describe('linking', function () {
       return Workspace.create(tree).then(ws => ws
         .run(`cd foo && $APM link bar --prefix ${ws.dirpath}`)
         .then(() => ws.readJson(`foo/amd_modules/bar/package.json`))
+        .then(bar => {
+          expect(bar).to.have.property('name', 'bar')
+          expect(bar).to.have.property('version', '1.2.3')
+        })
+      )
+    })
+    it('should respect to amdPrefix', function () {
+      let tree = {
+        'foo/package.json': '{"name": "foo", "amdPrefix": "hoo/haa"}',
+        'lib/amd_modules/bar/package.json': '{"name": "bar", "version": "1.2.3"}'
+      }
+      return Workspace.create(tree).then(ws => ws
+        .run(`cd foo && $APM link bar --prefix ${ws.dirpath}`)
+        .then(() => ws.readJson(`foo/hoo/haa/bar/package.json`))
         .then(bar => {
           expect(bar).to.have.property('name', 'bar')
           expect(bar).to.have.property('version', '1.2.3')

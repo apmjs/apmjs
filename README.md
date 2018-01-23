@@ -33,5 +33,6 @@ For more details, see: https://github.com/apmjs/apmjs/wiki.
 * `apmjs link`: Link to/from `<npm-prefix>/lib/amd_modules`, install as needed
 * `apmjs unlink`: Unlink global AMD modules
 * `apmjs version`: Prints apmjs version, of course.
+* `.js` is not allowed in package name, since `.js` is always appended when require.js fetching scripts.
 
 [dependency-resolving]: https://github.com/apmjs/apmjs/wiki/Dependency-Resolving

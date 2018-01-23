@@ -7,7 +7,6 @@ const path = require('path')
 const Promise = require('bluebird')
 const Package = require('./package.js')
 const fs = require('fs-extra')
-const findUp = require('./utils/fs.js').findUp
 const npm = require('./utils/npm')
 
 function linkCurrent () {
@@ -37,13 +36,10 @@ function linkDependency (decl) {
   return Promise
     .all([
       loadOrInstall(pkgDescriptor.name, pkgDescriptor.semver),
-      Promise.any([
-        findUp('amd_modules'),
-        findUp('package.json').then(file => path.resolve(file, '../amd_modules'))
-      ])
+      Package.load()
     ])
-    .spread((pkg, dir) => {
-      let link = path.resolve(dir, pkgDescriptor.name)
+    .spread((pkg, root) => {
+      let link = path.resolve(root.modulesPath, pkgDescriptor.name)
       let file = pkg.pathname
       return fs.remove(link)
         .then(() => fs.ensureSymlink(file, link))
@@ -63,13 +59,9 @@ function unlinkCurrent () {
 }
 
 function unlinkDependency (name) {
-  return Promise
-    .any([
-      findUp('amd_modules'),
-      findUp('package.json').then(file => path.resolve(file, '../amd_modules'))
-    ])
-    .then(dir => {
-      let link = path.resolve(dir, name)
+  return Package.load()
+    .then(root => {
+      let link = path.resolve(root.modulesPath, name)
       return fs.remove(link).then(() => console.log(`unlink ${link}`))
     })
 }
