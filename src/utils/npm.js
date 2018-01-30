@@ -89,6 +89,11 @@ Object.defineProperties(npmDelegate, {
       return npm.prefix
     }
   },
+  'tmp': {
+    get: () => {
+      return npm.tmp
+    }
+  },
   'localPrefix': {
     get: () => {
       return npm.localPrefix

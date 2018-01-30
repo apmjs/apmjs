@@ -1,5 +1,4 @@
 'use strict'
-const os = require('os')
 const PassThrough = require('stream').PassThrough
 const Promise = require('bluebird')
 const tarball = require('tarball-extract')
@@ -169,7 +168,7 @@ Package.prototype.download = function () {
 }
 
 Package.prototype.untar = function (tarfile) {
-  let untardir = path.join(os.tmpdir(), `${this.name}`)
+  let untardir = path.join(npm.tmp, 'modules', `${this.name}`)
 
   return fs.remove(untardir)
     .then(() => Promise.fromCallback(
