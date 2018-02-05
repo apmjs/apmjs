@@ -12,7 +12,7 @@ describe('caching', function () {
 
   before(cb => registry.startServer(cb))
   after(cb => registry.stopServer(cb))
-  beforeEach(() => Workspace.create()
+  beforeEach(() => Workspace.create({'package.json': '{"name": "root"}'})
     .then(workspace => {
       ws = workspace
       return ws.run('$APM install foo')
