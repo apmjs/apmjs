@@ -71,7 +71,7 @@ describe('linking', function () {
         .then(result => expect(result).to.be.false)
       )
     })
-    it('should unlink if installed already', function () {
+    it('should unlink if linked already', function () {
       let tree = {
         'foo/package.json': '{ "name": "foo", "version": "4.5.6" }'
       }
@@ -92,7 +92,7 @@ describe('linking', function () {
       }
       return Workspace.create(tree).then(ws => ws
         .run(`cd foo && $APM unlink bar --prefix ${ws.dirpath}`)
-        .then(result => expect(result.stdout).to.contain(`unlink ${ws.dirpath}/foo/haa/hoo/bar`))
+        .then(result => expect(result.stdout).to.contain(`bar already unlinked`))
       )
     })
     it('should unlink if installed already', function () {
@@ -109,7 +109,7 @@ describe('linking', function () {
     it('should unlink if linked', function () {
       let tree = {
         'foo/package.json': '{ "name": "foo", "version": "4.5.6" }',
-        'lib/amd_modules/bar/package.json': '{ "name": "bar" }'
+        'lib/amd_modules/bar/package.json': '{ "name": "bar", "browser": "haa.js" }'
       }
       return Workspace.create(tree).then(ws => ws
         .run(`cd foo && $APM link bar --prefix ${ws.dirpath}`)
@@ -117,6 +117,8 @@ describe('linking', function () {
         .then(result => expect(result).to.be.true)
         .then(() => ws.run(`cd foo && $APM unlink bar --prefix ${ws.dirpath}`))
         .then(() => fs.exists(`${ws.dirpath}/foo/amd_modules/bar`))
+        .then(result => expect(result).to.be.false)
+        .then(() => fs.exists(`${ws.dirpath}/foo/amd_modules/bar.js`))
         .then(result => expect(result).to.be.false)
       )
     })
@@ -126,7 +128,7 @@ describe('linking', function () {
       let tree = {
         'foo/package.json': '{"name": "foo"}',
         'foo/amd_modules/bar/package.json': '{"name": "bar", "version": "3.2.1"}',
-        'lib/amd_modules/bar/package.json': '{"name": "bar", "version": "1.2.3"}'
+        'lib/amd_modules/bar/package.json': '{"name": "bar", "version": "1.2.3", "browser": "haa.js"}'
       }
       return Workspace.create(tree).then(ws => ws
         .run(`cd foo && $APM link bar --prefix ${ws.dirpath}`)
@@ -135,6 +137,8 @@ describe('linking', function () {
           expect(bar).to.have.property('name', 'bar')
           expect(bar).to.have.property('version', '1.2.3')
         })
+        .then(() => ws.readFile(`foo/amd_modules/bar.js`, 'utf8'))
+        .then(bar => expect(bar).to.equal("define(['./bar/haa'], function (mod) { return mod; })"))
       )
     })
     it('should link if not installed locally', function () {

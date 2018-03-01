@@ -41,8 +41,10 @@ function linkDependency (decl) {
     .spread((pkg, root) => {
       let link = path.resolve(root.modulesPath, pkgDescriptor.name)
       let file = pkg.pathname
+      pkg.setPathname(link)
       return fs.remove(link)
         .then(() => fs.ensureSymlink(file, link))
+        .then(() => pkg.writeAMDEntry())
         .then(() => console.log(`${link} -> ${file}`))
     })
 }
@@ -60,10 +62,18 @@ function unlinkCurrent () {
 
 function unlinkDependency (name) {
   return Package.load()
-    .then(root => {
-      let link = path.resolve(root.modulesPath, name)
-      return fs.remove(link).then(() => console.log(`unlink ${link}`))
-    })
+  .then(root => root.dependencyInstalled({name}))
+  .then(pkg => {
+    if (pkg) {
+      return Promise.all([
+        pkg.removeAMDEntry(),
+        fs.remove(pkg.pathname)
+      ])
+      .then(() => console.log(`unlink ${pkg.pathname}`))
+    } else {
+      console.log(`${name} already unlinked`)
+    }
+  })
 }
 
 module.exports = {linkCurrent, unlinkCurrent, linkDependency, unlinkDependency}

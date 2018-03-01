@@ -31,8 +31,12 @@ function Package (descriptor, pathname) {
   }
 }
 
+Package.prototype.dependencyPath = function (name) {
+  return path.resolve(this.modulesPath || npm.dir, name)
+}
+
 Package.prototype.loadDependency = function (name) {
-  return Package.loadByPath(path.resolve(this.modulesPath || npm.dir, name))
+  return Package.loadByPath(this.dependencyPath(name))
 }
 
 Package.loadByPath = function (pathname) {
@@ -214,7 +218,7 @@ Package.prototype.dependencyInstalled = function (pkg) {
     if (pkg.version) {
       return pkg.version === json.version
     }
-    return true
+    return json
   })
   .catch(e => {
     if (e.code === 'ENOENT') {
@@ -262,6 +266,10 @@ Package.prototype.replaceBrowserFiles = function () {
       log.warn(`failed to mv ${replacer} to ${target}: ${e.message}`)
     })
   })
+}
+
+Package.prototype.removeAMDEntry = function () {
+  return fs.remove(this.amdpath)
 }
 
 Package.prototype.writeAMDEntry = function () {
