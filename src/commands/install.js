@@ -7,6 +7,9 @@ const Installer = require('../installer.js')
 const Package = require('../package.js')
 
 function install (dependencies, errorHandler, conf) {
+  // Default is true '--save'
+  // flase '--no-save'
+  if (conf['save'] === undefined) conf['save'] = true
   let save = conf['save']
   let deps = dependencies.map(version.parseDependencyDeclaration)
 
