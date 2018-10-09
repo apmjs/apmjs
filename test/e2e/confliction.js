@@ -106,9 +106,9 @@ describe('confliction handling', function () {
       var msg = 'version conflict: upgrade bar@<=1.0.0 (required by coo@1.0.0) to match 1.1.0 (required by index)'
       expect(result.stderr).to.include(msg)
     })
-    it('should not change package.json', function () {
+    it('should change package.json accordingly', function () {
       return workspace.readJson(`package.json`).then(index => {
-        expect(index.amdDependencies).to.not.have.property('bar')
+        expect(index.amdDependencies).to.have.property('bar', '^1.1.0')
       })
     })
   })
@@ -154,7 +154,7 @@ describe('confliction handling', function () {
         .then(json => {
           expect(json).to.have.nested.property('dependencies.bar.version', '1.0.0')
           expect(json).to.have.nested.property('dependencies.coo.version', '1.0.0')
-          expect(json).to.not.have.nested.property('dependencies.doo')
+          expect(json).to.have.nested.property('dependencies.doo.version', '1.0.1')
         })
     })
   })
@@ -187,6 +187,38 @@ describe('confliction handling', function () {
     it('should change package.json accordingly', function () {
       return workspace.readJson(`package.json`).then(index => {
         expect(index.amdDependencies).to.have.property('bar', '^1.1.0')
+      })
+    })
+  })
+  describe('install conflict version with --no-save', function () {
+    let workspace
+    before(() => Workspace
+      .create({
+        'package.json': JSON.stringify({
+          name: 'index',
+          amdDependencies: { coo: '1.0.0' }
+        }),
+        'amd_modules/coo/package.json': JSON.stringify({
+          name: 'coo',
+          version: '1.0.0'
+        }),
+        'amd_modules/bar/package.json': JSON.stringify({
+          name: 'bar',
+          version: '1.0.0'
+        })
+      })
+      .tap(ws => (workspace = ws))
+      .then(ws => ws.run('$APM install bar@~1.1.0 --no-save'))
+    )
+    it('should make install successful', function () {
+      return workspace.readJson(`amd_modules/bar/package.json`).then(bar => {
+        expect(bar).to.have.property('name', 'bar')
+        expect(bar).to.have.property('version', '1.1.0')
+      })
+    })
+    it('should not change package.json', function () {
+      return workspace.readJson(`package.json`).then(index => {
+        expect(index.amdDependencies).to.not.have.property('bar')
       })
     })
   })
