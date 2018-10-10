@@ -39,6 +39,11 @@ Package.prototype.loadDependency = function (name) {
   return Package.loadByPath(this.dependencyPath(name))
 }
 
+Package.prototype.dependencyLinked = function (name) {
+  let filepath = this.dependencyPath(name)
+  return fs.lstat(filepath).then(stats => stats.isSymbolicLink())
+}
+
 Package.loadByPath = function (pathname) {
   let pkgPath = path.resolve(pathname, 'package.json')
   log.verbose('package', 'loading package:', pkgPath)

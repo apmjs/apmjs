@@ -155,6 +155,21 @@ describe('linking', function () {
         })
       )
     })
+    it('links should not be touched during later install', function () {
+      let tree = {
+        'foo/package.json': '{"name": "foo", "amdDependencies": {"bar": "1.0.0"}}',
+        'lib/amd_modules/bar/package.json': '{"name": "bar", "version": "1.2.3"}'
+      }
+      return Workspace.create(tree).then(ws =>
+        ws.run(`cd foo && $APM link bar --prefix ${ws.dirpath}`)
+        .then(() => ws.run(`cd foo && $APM install`))
+        .then(() => ws.readJson(`foo/amd_modules/bar/package.json`))
+        .then(bar => {
+          expect(bar).to.have.property('name', 'bar')
+          expect(bar).to.have.property('version', '1.2.3')
+        })
+      )
+    })
     it('should respect to amdPrefix', function () {
       let tree = {
         'foo/package.json': '{"name": "foo", "amdPrefix": "hoo/haa"}',

@@ -2,6 +2,7 @@
 const error = require('../utils/error.js')
 const assert = require('assert')
 const Lock = require('./lock.js')
+const Promise = require('bluebird')
 const treePrinter = require('tree-printer')
 const Package = require('../package.js')
 const log = require('npmlog')
@@ -74,8 +75,16 @@ TreeNode.prototype.installDependency = function (name, semver, saved) {
 
 TreeNode.prototype.tryCreateLocalNode = function (name, semver) {
   log.silly(`creating local node for ${name}@${semver}`)
-  return this.pkg.loadDependency(name)
-    .then(pkg => {
+  return Promise
+    .all([
+      this.pkg.loadDependency(name),
+      this.pkg.dependencyLinked(name)
+    ])
+    .spread((pkg, linked) => {
+      if (linked) {
+        log.silly(`local node linked, returning ${pkg}`)
+        return new TreeNode(pkg)
+      }
       if (Version.satisfies(pkg.version, semver)) {
         log.silly(`local node created ${pkg}`)
         return new TreeNode(pkg)
