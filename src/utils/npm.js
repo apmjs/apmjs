@@ -19,9 +19,11 @@ function downloadPackage (url) {
     // response stream is fake (cannot pipe after emitted)
     let fileStream = new PassThrough()
     request({ url, followRedirect: true })
-    .on('response', res => res.statusCode >= 400
+    .on('response', res => {
+      res.statusCode >= 400
       ? reject(new error.HTTP(res.statusCode))
-      : resolve(fileStream))
+      : resolve(fileStream)
+    })
     .pipe(fileStream)
   })
 }

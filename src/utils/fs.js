@@ -32,9 +32,9 @@ function catchNoEntry (err) {
 
 function writeFileStream (stream, filename) {
   return new Promise((resolve, reject) => {
-    stream.on('error', reject)
-    stream.on('finish', resolve)
     stream.pipe(fs.createWriteStream(filename))
+    .on('error', reject)
+    .on('finish', resolve)
   })
 }
 
