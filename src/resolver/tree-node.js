@@ -56,7 +56,7 @@ TreeNode.prototype.updateOrInstallDependency = function (name, semver, saved) {
   log.silly(`update or install dependency ${name}@${semver}`)
   if (savedVersionExists(name)) saved = true
   if (this.children[name]) {
-    log.silly(`${this.children[name]} already installed for ${this}, removing...`)
+    log.silly(`${this.children[name]} already added for ${this}, removing...`)
     this.children[name].remove(this)
   }
   semver = semver || this.pkg.dependencies[name]
@@ -67,7 +67,7 @@ TreeNode.prototype.installDependency = function (name, semver, saved) {
   log.silly(`install dependency ${name}@${semver}`)
   if (savedVersionExists(name)) saved = true
   if (this.children[name]) {
-    log.silly(`${this.children[name]} already installed for ${this}, removing...`)
+    log.silly(`${this.children[name]} already added for ${this}, removing...`)
     this.children[name].remove(this)
   }
   return this.addDependency(name, semver, {listed: true, saved})
@@ -123,26 +123,26 @@ function useSource (satisfies, options) {
     return 'remote'
   }
   if (options.listed) {
-    return satisfies ? 'installed' : 'remote'
+    return satisfies ? 'added' : 'remote'
   }
-  return satisfies ? 'installed' : 'fail'
+  return satisfies ? 'added' : 'fail'
 }
 
 TreeNode.prototype.addDependency = function (name, semver, options) {
   options = options || {}
   log.silly(`add dependency: ${name}@${semver} with options:`, options)
   return enque(name, () => {
-    let installed = TreeNode.nodes[name]
+    let added = TreeNode.nodes[name]
 
-    if (installed) {
-      let satisfies = installed.checkConformance(semver, this)
+    if (added) {
+      let satisfies = added.checkConformance(semver, this)
       switch (useSource(satisfies, options)) {
-        case 'installed':
-          this.appendChild(installed)
+        case 'added':
+          this.appendChild(added)
           if (options.saved) {
-            installed.saved = true
+            added.saved = true
           }
-          return Promise.resolve(installed)
+          return Promise.resolve(added)
         case 'fail':
           let node = new TreeNode({name: name, version: semver, placeholder: true}, options.saved)
           node.pkg.status = 'not installed'
@@ -162,8 +162,8 @@ TreeNode.prototype.addDependency = function (name, semver, options) {
     .then(node => {
       node.listed = options.listed
       this.appendChild(node)
-      if (installed) {
-        installed.pkg.status = 'removed'
+      if (added) {
+        added.pkg.status = 'removed'
       }
       node.saved = options.saved
       return node.populateChildren().then(() => node)
@@ -177,14 +177,14 @@ TreeNode.prototype.checkConformance = function (semver, parent) {
     return true
   }
   let name = this.name
-  let parentInstalled = _.sample(this.parents)
-  let parentRequired = parentInstalled.pkg.dependencies[name]
+  let parentAdded = _.sample(this.parents)
+  let parentRequired = parentAdded.pkg.dependencies[name]
   let msg = 'version conflict: '
   if (Version.ltr(this.version, semver)) {
-    msg += `upgrade ${name}@${parentRequired} (required by ${parentInstalled}) to match ${semver} (required by ${parent})`
+    msg += `upgrade ${name}@${parentRequired} (required by ${parentAdded}) to match ${semver} (required by ${parent})`
   } else {
-    let semverInstalled = parentInstalled.pkg.dependencies[name]
-    msg += `upgrade ${name}@${semver} (required by ${parent}) to match ${semverInstalled} (required by ${parentInstalled})`
+    let semverAdded = parentAdded.pkg.dependencies[name]
+    msg += `upgrade ${name}@${semver} (required by ${parent}) to match ${semverAdded} (required by ${parentAdded})`
   }
   log.error(msg)
   return false
