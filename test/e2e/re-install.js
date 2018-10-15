@@ -23,7 +23,7 @@ describe('re-install a package', function () {
         expect(bar).to.have.property('version', '1.0.1')
       })
   })
-  it('should use local copy in subsequent installs', function () {
+  it('should respect installed packages in amdPrefix', function () {
     return Workspace
     .create({
       'package.json': '{"name": "index", "amdPrefix": "hei/haa", "amdDependencies": {"bar": "^1.0.1"}}',
@@ -34,6 +34,20 @@ describe('re-install a package', function () {
       .then(bar => {
         expect(bar).to.have.property('name', 'bar')
         expect(bar).to.have.property('version', '1.0.1')
+      })
+    )
+  })
+  it('should only respect installed packages in amdPrefix if set', function () {
+    return Workspace
+    .create({
+      'package.json': '{"name": "index", "amdPrefix": "hei/haa", "amdDependencies": {"bar": "^1.0.1"}}',
+      'amd_modules/bar/package.json': '{"name": "bar", "version": "1.0.1"}'
+    })
+    .then(workspace => workspace.run('$APM install --loglevel silly')
+      .then(() => workspace.readJson(`hei/haa/bar/package.json`))
+      .then(bar => {
+        expect(bar).to.have.property('name', 'bar')
+        expect(bar).to.have.property('version', '1.1.0')
       })
     )
   })
