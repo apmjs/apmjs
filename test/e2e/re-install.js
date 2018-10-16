@@ -59,6 +59,17 @@ describe('re-install a package', function () {
         expect(bar).to.have.property('version', '1.0.1')
       })
   })
+  it('should not re-order keys in package.json when nothing changed', function () {
+    return Workspace.create({
+      'package.json': '{"name": "index", "amdDependencies": {"b": "^2.0.0", "a": "^1.0.0"}}',
+      'amd_modules/a/package.json': '{"name": "a", "version": "1.0.0"}',
+      'amd_modules/b/package.json': '{"name": "b", "version": "2.0.0"}'
+    }).then(workspace => workspace.run('$APM install')
+      .then(() => workspace.readFile(`package.json`))
+      .then(pkgstr => {
+        expect(pkgstr).to.contain('{"b": "^2.0.0", "a": "^1.0.0"}')
+      }))
+  })
   it('should update once specified version', function () {
     return workspace.run('$APM install bar@1.1.0')
       .then(() => workspace.readJson(`amd-lock.json`))

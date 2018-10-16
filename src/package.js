@@ -330,6 +330,19 @@ Package.prototype.setPathname = function (pathname) {
   return this
 }
 
+Package.prototype.dependencyNotChanged = function (deps) {
+  let keys1 = Object.keys(this.dependencies).sort()
+  let keys2 = Object.keys(deps).sort()
+  if (keys1.join(',') !== keys2.join(',')) {
+    return false
+  }
+  for (let i = 0; i < keys1.length; i++) {
+    let key = keys1[i]
+    if (this.dependencies[key] !== deps[key]) return false
+  }
+  return true
+}
+
 Package.prototype.saveDependencies = function (nodes, save) {
   if (!this.descriptorPath) {
     log.info(SKIP_WRITING_MSG)
@@ -354,6 +367,7 @@ Package.prototype.saveDependencies = function (nodes, save) {
             : this.dependencies[node.name]
         }
       })
+      if (this.dependencyNotChanged(deps)) return
       descriptor.amdDependencies = _.chain(deps).toPairs().sort().fromPairs()
       return fs.writeJson(this.descriptorPath, descriptor, {spaces: 2})
     })
