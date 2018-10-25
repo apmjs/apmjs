@@ -115,6 +115,10 @@ Package.prototype.install = function (lock) {
   .then(tarfile => tarfile || this.download())
   .then(tarfile => this.untar(tarfile))
   .then(() => this.postInstall())
+  .catch(e => {
+    e.message = `Failed to install package "${this.name}": ${e.message}`
+    throw e
+  })
 }
 
 Package.prototype.queryCache = function () {
@@ -193,7 +197,8 @@ Package.prototype.checkIntegrity = function (dataStream) {
   let sha1 = _.get(this, 'descriptor.dist.shasum')
   if (sri) {
     log.verbose('integrity', `sri checking ${this} against ${sri}`)
-    return integrity.checkSRI(dataStream, sri).then(() => (this.integrity = sri))
+    return integrity.checkSRI(dataStream, sri)
+    .then(() => (this.integrity = sri))
   }
 
   let sParse = new PassThrough()
@@ -201,10 +206,13 @@ Package.prototype.checkIntegrity = function (dataStream) {
   dataStream.pipe(sParse)
   dataStream.pipe(sCheck)
 
-  let todo = [integrity.getSRI(sParse).then(sri => {
-    log.verbose(`integrity generated for ${this}: ${sri}`)
-    return sri
-  })]
+  let todo = [
+    integrity.getSRI(sParse)
+    .then(sri => {
+      log.verbose(`integrity generated for ${this}: ${sri}`)
+      return sri
+    })
+  ]
   if (sha1) {
     log.verbose('integrity', `sha1 checking ${this} against ${sha1}`)
     todo.push(integrity.checkSHA1(sCheck, sha1))

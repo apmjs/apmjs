@@ -43,7 +43,7 @@ describe('Package', function () {
       let pkg = new Package(meta.versions['1.0.0'], pathname)
       return expect(pkg.install()).to.eventually.be.rejectedWith(
         IntegrityError,
-        'integrity checksum failed when using sha1: wanted 943e0ec03df00ebeb6273a5b94b916ba54b47581 but got bf7aa90e5d35ef42bf9d45f066ab52f76d0731e3'
+        'Failed to install package "integrity": integrity checksum failed when using sha1: wanted 943e0ec03df00ebeb6273a5b94b916ba54b47581 but got bf7aa90e5d35ef42bf9d45f066ab52f76d0731e3'
       )
     })
     it('should reject if integrity(sri) not match', function () {
