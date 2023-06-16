@@ -1,7 +1,8 @@
 'use strict'
 const PassThrough = require('stream').PassThrough
 const Promise = require('bluebird')
-const tarball = require('tarball-extract')
+const gunzip = require('gunzip-maybe')
+const tar = require('tar')
 const Lock = require('./resolver/lock.js')
 const integrity = require('./utils/integrity.js')
 const writeFileStream = require('./utils/fs.js').writeFileStream
@@ -185,7 +186,11 @@ Package.prototype.untar = function (tarfile) {
 
   return fs.remove(untardir)
     .then(() => Promise.fromCallback(
-      cb => tarball.extractTarball(tarfile, untardir, cb)
+      cb => fs.createReadStream(tarfile)
+        .pipe(gunzip())
+        .pipe(tar.Extract({path: untardir}))
+        .on('error', err => cb(err))
+        .on('end', () => cb(null))
     ))
     // move+override doesn't work for symlinks, remove it anyway
     .then(() => fs.remove(this.pathname))
