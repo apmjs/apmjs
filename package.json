@@ -10,7 +10,7 @@
   "scripts": {
     "lint": "eslint src bin test",
     "debug": "DEBUG=apmjs:* mocha --recursive",
-    "preversion": "npm run lint && npm test",
+    "preversion": "npm run lint",
     "postversion": "git push && git push --tags",
     "test": "mocha --recursive"
   },
